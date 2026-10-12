@@ -1,0 +1,841 @@
+/* ============================================
+   BASE STYLES - Shared across all pages
+   ============================================ */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   HEADER NAVIGATION - Permanent left sidebar on desktop
+   ============================================ */
+
+.header-nav {
+    display: block;
+    width: 100%;
+    margin: 0 0 20px 0;
+    padding: 0;
+    background-color: transparent;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+}
+
+/* Compact pinned header for narrow desktop / split view */
+@media (min-width: 769px) and (max-width: 1499px) {
+    .header-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        z-index: 9999;
+        padding: 8px 12px;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        overflow: visible;
+        background-color: inherit;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .header-nav-flex {
+        max-width: none;
+        margin: 0;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        width: 100%;
+    }
+
+    .header-nav .nav-btn {
+        width: auto;
+        height: 40px;
+        padding: 6px 12px;
+        font-size: 14px;
+        border-radius: 8px;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    .header-nav .user-dropdown {
+        width: auto;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-size: 14px;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    .main-content {
+        margin-left: 20px;
+        margin-right: 20px;
+        margin-top: 75px;
+        padding: 15px;
+        min-height: 100vh;
+    }
+
+    body {
+        padding: 0 !important;
+    }
+
+    .dropdown-menu {
+        position: absolute;
+        right: 0;
+        left: auto;
+        top: 100%;
+        margin-left: 0;
+        margin-top: 5px;
+    }
+}
+
+/* Desktop: permanent left sidebar */
+@media (min-width: 1500px) {
+.header-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 170px;
+    height: 100vh;
+    z-index: 9999;
+    padding: 20px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 10px;
+    overflow: visible;
+    background-color: transparent;
+}
+
+    .header-nav-flex {
+        max-width: none;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        flex-wrap: nowrap;
+        gap: 10px;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .header-nav .nav-btn {
+        width: 100%;
+        height: 44px;
+        padding: 8px 12px;
+        font-size: 15px;
+        border-radius: 8px;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    .header-nav .user-dropdown {
+        width: 100%;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-size: 15px;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    /* Main content wrapper - shift right for sidebar, mirror for true center */
+    .main-content {
+        margin-left: 190px;
+        margin-right: 190px;
+        margin-top: 20px;
+        padding: 20px;
+        min-height: 100vh;
+    }
+
+    /* Remove body padding on desktop to avoid double-offset with .main-content */
+    body {
+        padding: 0 !important;
+    }
+
+    /* Dropdown positioned to the right of sidebar */
+    .dropdown-menu {
+        position: absolute;
+        right: auto;
+        left: 100%;
+        top: 0;
+        margin-left: 8px;
+        margin-top: 0;
+    }
+}
+
+/* Mobile styles */
+.header-nav-flex {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    height: 44px;
+    min-height: 44px;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: opacity 0.2s ease, transform 0.1s ease;
+    border: none;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.nav-btn:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+
+.user-dropdown {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    height: 44px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* hover and active states are defined in each template's inline styles */
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 200px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    margin-top: 5px;
+    padding: 5px 0;
+    z-index: 10000;
+    white-space: nowrap;
+}
+
+/* Prevent dropdown from going off-screen on mobile */
+@media (max-width: 600px) {
+    .dropdown-menu {
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%);
+        min-width: 160px;
+    }
+}
+
+/* Click to toggle dropdown - no hover */
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 10px 16px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 15px;
+    transition: opacity 0.2s;
+    cursor: pointer;
+}
+
+.dropdown-menu a:hover {
+    opacity: 0.85;
+}
+
+/* ============================================
+   CARDS & CONTAINERS
+   ============================================ */
+
+.card {
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+/* ============================================
+   FORMS
+   ============================================ */
+
+.form-container {
+    max-width: 600px;
+    margin: 0 auto 40px;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="datetime-local"],
+input[type="file"],
+textarea,
+select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.2s ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: currentColor;
+}
+
+textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: opacity 0.2s ease, transform 0.1s ease;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px;
+}
+
+.btn:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+
+.btn-full {
+    width: 100%;
+}
+
+/* ============================================
+   ALERTS
+   ============================================ */
+
+.alert {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.alert-warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.alert-info {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+
+.text-center {
+    text-align: center;
+}
+
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: 10px; }
+.mb-2 { margin-bottom: 20px; }
+.mb-3 { margin-bottom: 30px; }
+
+.mt-0 { margin-top: 0; }
+.mt-1 { margin-top: 10px; }
+.mt-2 { margin-top: 20px; }
+.mt-3 { margin-top: 30px; }
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+    .header-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 9999;
+        padding: 8px 12px;
+        background-color: inherit;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .header-nav-flex {
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .nav-btn {
+        padding: 8px 12px;
+        font-size: 14px;
+        height: 40px;
+    }
+    
+    .main-content {
+        margin-top: 75px;
+        margin-left: 10px;
+        margin-right: 10px;
+        padding: 15px;
+    }
+    
+    .form-container {
+        padding: 15px;
+        margin: 0 auto 20px;
+    }
+}
+
+@media (max-width: 440px) {
+    .main-content {
+        margin-top: 110px;
+    }
+}
+
+/* ============================================================
+   FULLSCREEN MEDIA VIEWER — shared across events & event_detail
+   Single mode: click media → fullscreen immediately
+   iOS videos use native webkitEnterFullscreen
+   iOS images use CSS fullscreen overlay (Fullscreen API not available)
+   ============================================================ */
+
+.fullscreen-viewer {
+    display: none;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    width: 100dvw;
+    height: 100vh;
+    height: 100dvh;
+    background-color: black;
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    /* Prevent iOS rubber-banding */
+    overscroll-behavior: none;
+}
+
+/* All platforms use custom JS zoom, so block native pinch in the viewer.
+   The thumb strip has its own touch-action to allow horizontal scrolling. */
+.fullscreen-viewer {
+    touch-action: none;
+}
+
+/* Mali GPU workaround: force GPU compositing layer to prevent tile boundary
+   grid artifacts visible during zoom on Samsung/Exynos/Mali devices */
+html.is-mobile .viewer-media {
+    outline: 1px solid transparent;
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+.fullscreen-viewer.active {
+    display: flex;
+}
+
+/* Media element inside viewer — flexbox centered, JS handles zoom */
+.viewer-media {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    object-fit: contain;
+    -webkit-user-drag: none;
+    user-drag: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    /* Centered by flexbox on .fullscreen-viewer */
+}
+
+/* Desktop custom zoom needs transform-origin; on mobile it just promotes
+   to a GPU composite layer (Mali tiling) with no benefit since native zoom
+   doesn't use CSS transforms on the element. */
+html:not(.is-mobile) .viewer-media {
+    transform-origin: center center;
+    z-index: 10000;
+}
+
+/* iOS-only: the native inline player puts its fullscreen-expand control
+   at the video's top-left corner — same spot as our close button on
+   edge-to-edge video. Drop the X below the native control zone instead
+   of shrinking the video. */
+.fullscreen-viewer.is-ios .viewer-close {
+    top: 70px;
+}
+
+/* Auto-hiding chrome: all viewer UI fades out after a few seconds of
+   inactivity so the media is fully unobstructed. Tap / mouse movement
+   brings it back. pointer-events: none lets taps pass through hidden UI. */
+.event-title-overlay,
+.viewer-close,
+.nav-arrow,
+.media-counter,
+.thumb-strip {
+    transition: opacity 0.35s ease;
+}
+
+.fullscreen-viewer.chrome-hidden .event-title-overlay,
+.fullscreen-viewer.chrome-hidden .viewer-close,
+.fullscreen-viewer.chrome-hidden .nav-arrow,
+.fullscreen-viewer.chrome-hidden .media-counter,
+.fullscreen-viewer.chrome-hidden .thumb-strip {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* The title has its own `.active` opacity:1 rule later in this file with
+   equal specificity — this higher-specificity rule wins the tie so the
+   event name fades with the rest of the chrome */
+.fullscreen-viewer.active.chrome-hidden .event-title-overlay {
+    opacity: 0;
+}
+
+/* When viewing a video, keep thumb strip visible even during chrome hide
+   (overrides the chrome-hidden opacity:0 rule). */
+.fullscreen-viewer.chrome-hidden.video-playing .thumb-strip {
+    opacity: 1;
+}
+
+/* When viewing a video, constrain height and align to top so no gap above/below */
+.fullscreen-viewer.video-playing {
+    align-items: flex-start;
+}
+.fullscreen-viewer.video-playing .viewer-media {
+    max-height: calc(100vh - 55px);
+}
+
+/* Always pass clicks through thumb strip to video controls when playing video.
+   Individual thumb items remain clickable. */
+.fullscreen-viewer.video-playing .thumb-strip {
+    pointer-events: none;
+}
+.fullscreen-viewer.video-playing .thumb-strip .thumb-strip-item,
+.fullscreen-viewer.video-playing .thumb-strip .thumb-strip-bridge {
+    pointer-events: auto;
+}
+
+/* Close button — top left, always visible */
+.viewer-close {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    color: white;
+    font-size: 32px;
+    cursor: pointer;
+    z-index: 10002;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    line-height: 1;
+    transition: background 0.2s;
+}
+
+.viewer-close:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/* Navigation arrows */
+.nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 3em;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    padding: 20px;
+    user-select: none;
+    z-index: 10001;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.nav-arrow:hover {
+    color: #fff;
+    transform: translateY(-50%) scale(1.2);
+}
+
+.nav-arrow.left {
+    left: 10px;
+}
+
+.nav-arrow.right {
+    right: 10px;
+}
+
+/* Hide arrows on mobile/touch — use swipe */
+@media (max-width: 768px), (hover: none) {
+    .nav-arrow {
+        display: none !important;
+    }
+}
+
+/* Event title overlay */
+.event-title-overlay {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: bold;
+    font-family: Arial, sans-serif;
+    max-width: 80%;
+    text-align: center;
+    z-index: 10001;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.fullscreen-viewer.active .event-title-overlay {
+    opacity: 1;
+}
+
+/* Media counter */
+.media-counter {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 1em;
+    font-family: Arial, sans-serif;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 6px 14px;
+    border-radius: 20px;
+    z-index: 10001;
+    pointer-events: none;
+}
+
+/* Thumbnail strip at bottom */
+.thumb-strip {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 55px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 10001;
+    align-items: center;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    /* Allow horizontal scroll despite parent touch-action:none */
+    touch-action: pan-x;
+}
+
+.thumb-strip::-webkit-scrollbar {
+    height: 3px;
+}
+
+.thumb-strip::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.thumb-strip-item {
+    position: relative;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.thumb-video-badge {
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    font-size: 9px;
+    line-height: 1;
+    color: white;
+    background: rgba(0, 0, 0, 0.65);
+    border-radius: 3px;
+    padding: 2px 3px;
+    pointer-events: none;
+}
+
+.thumb-strip-bridge {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 40px;
+    max-width: 130px;
+    padding: 0 10px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid transparent;
+    color: white;
+    font-size: 11px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+}
+
+.thumb-strip-bridge:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.thumb-strip-bridge .bridge-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.thumb-strip-bridge .bridge-arrow {
+    font-size: 13px;
+    opacity: 0.8;
+}
+
+.thumb-strip-item:hover {
+    transform: scale(1.1);
+}
+
+.thumb-strip-item.active {
+    border-color: #4a9eff;
+}
+
+.thumb-strip-item img,
+.thumb-strip-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.thumb-video-icon {
+    color: white;
+    font-size: 16px;
+}
+
+/* Mobile-specific viewer adjustments */
+@media (max-width: 768px) {
+    .viewer-media {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+    }
+
+    /* On mobile, keep videos centered (desktop uses flex-start which pushes
+       non-full-height videos to the top — bad on small screens).
+       padding-bottom shrinks the flex content area so the thumb strip
+       sits in the padding zone and never overlaps the video. */
+    .fullscreen-viewer.video-playing {
+        align-items: center;
+        padding-bottom: 50px;
+    }
+    .fullscreen-viewer.video-playing .viewer-media {
+        max-height: calc(100dvh - 50px);
+    }
+
+    .event-title-overlay {
+        top: 10px;
+        font-size: 0.85em;
+        padding: 8px 14px;
+    }
+
+    .media-counter {
+        bottom: 65px;
+        font-size: 0.85em;
+    }
+
+    .thumb-strip {
+        height: 50px;
+    }
+
+    .thumb-strip-item {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+/* iOS-specific fixes for position:fixed fullscreen overlay */
+@supports (-webkit-touch-callout: none) {
+    .fullscreen-viewer {
+        /* iOS Safari viewport fix */
+        height: -webkit-fill-available;
+        height: 100dvh;
+        /* Momentum scrolling for iOS */
+        -webkit-overflow-scrolling: touch;
+    }
+}

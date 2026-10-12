@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" id="viewport-meta">
+  <title>{{ page_title }}</title>
+  <link rel="preload" href="/static/fonts/handcaps.otf" as="font" type="font/otf" crossorigin="anonymous">
+  <link rel="stylesheet" href="{{ static_url('fonts/fonts.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/base.css') }}">
+  <style>
+    /* Inline font-face for maximum mobile compatibility */
+    @font-face {
+      font-family: 'Handcaps';
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url('/static/fonts/handcaps.otf') format('opentype');
+    }
+    
+    /* Prevent mobile font scaling issues */
+    html {
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    
+    /* Body font for ALL text elements */
+    *, *::before, *::after {
+      font-family: {{ site_settings.get('body_font', 'handcaps') | get_font_family | safe }} !important;
+    }
+    
+    /* Button font for all clickable elements */
+    a, a *, button, button *, input[type="submit"], input[type="button"], 
+    select, select *, .nav-btn, .nav-btn *, .btn, .btn *, 
+    .user-dropdown, .user-dropdown *, .dropdown-menu a, .dropdown-menu a *,
+    .toggle-btn, .toggle-btn *, .edit-btn, .edit-btn *, 
+    .pagination a, .pagination a *, .filter-btn, .filter-btn *, 
+    .clear-btn, .clear-btn * {
+      font-family: {{ site_settings.get('button_font', 'comic-sans') | get_font_family | safe }} !important;
+    }
+    
+    body {
+      background-color: {{ site_settings.background_color }};
+      color: {{ site_settings.text_color }};
+      font-size: 1.2em;
+      padding: 20px;
+      padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+      min-height: 100vh;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .main-content {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Clear fixed header on tablet/mobile */
+    @media (max-width: 1499px) {
+      .main-content {
+        margin-top: 55px;
+      }
+    }
+
+    @media (max-width: 359px) {
+      .main-content {
+        margin-top: 110px;
+      }
+    }
+    
+    h1 { text-align: center; color: {{ site_settings.primary_color }}; margin-bottom: 20px; width: 100%; clear: both; flex-shrink: 0; }
+    
+    /* Navigation */
+    .nav-btn { background-color: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; }
+    .nav-btn:hover { background-color: {{ site_settings.secondary_color }}; }
+    .user-dropdown { background-color: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    @media (hover: hover) and (pointer: fine) { .user-dropdown:hover { background-color: {{ site_settings.secondary_color }}; } }
+    .user-dropdown.active { background-color: {{ site_settings.secondary_color }}; }
+    .dropdown-menu { display: none; background-color: {{ site_settings.get('card_color', '#ffffff') }}; }
+    .dropdown-menu.show { display: block; }
+    .dropdown-menu a { color: {{ site_settings.text_color }}; }
+    .dropdown-menu a:hover { background-color: {{ site_settings.secondary_color }}; }
+    
+    /* Narrow desktop / split view: stack sidebar above main card */
+    @media (min-width: 769px) and (max-width: 1499px) {
+      .events-layout {
+        position: relative;
+        max-width: 800px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .event-wrapper {
+        width: 100%;
+        max-width: 800px;
+        background-color: {{ site_settings.get('card_color', '#ffffff') }};
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      
+      .controls-sidebar {
+        position: static;
+        width: 100%;
+        max-width: 800px;
+        background-color: {{ site_settings.get('card_color', '#ffffff') }};
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        order: -1;
+        margin-bottom: 15px;
+      }
+      
+      .controls-sidebar .filter-bar {
+        background: {{ site_settings.primary_color }};
+      }
+      
+      .controls-sidebar .toggle-btn {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+      }
+    }
+    
+    /* Desktop: main card centered like calendar, sidebar sticky to far right */
+    @media (min-width: 1500px) {
+      .events-layout {
+        position: relative;
+      }
+
+      .event-wrapper {
+        max-width: 800px;
+        width: 100%;
+        margin: 0 auto;
+        background-color: {{ site_settings.get('card_color', '#ffffff') }};
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+
+      .controls-sidebar {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        width: 260px;
+        background-color: {{ site_settings.get('card_color', '#ffffff') }};
+        padding: 32px 24px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        z-index: 100;
+      }
+
+      .controls-sidebar .filter-bar {
+        background: {{ site_settings.primary_color }};
+        padding: 16px 14px;
+        gap: 14px;
+        margin-bottom: 0;
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .controls-sidebar .filter-bar label {
+        font-size: 0.95em;
+        text-align: center;
+      }
+
+      .controls-sidebar .filter-bar select {
+        padding: 8px 10px;
+        font-size: 0.95em;
+        width: 100%;
+      }
+
+      .controls-sidebar .filter-btn,
+      .controls-sidebar .clear-btn {
+        padding: 10px 14px;
+        font-size: 0.95em;
+        height: 42px;
+        width: 100%;
+      }
+
+      .controls-sidebar .toggle-btn {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 14px 20px;
+        font-size: 1em;
+      }
+    }
+    
+    /* Mobile: single column - controls on TOP */
+    @media (max-width: 768px) {
+      .events-layout {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 0 10px;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .event-wrapper {
+        width: 100%;
+        background-color: {{ site_settings.get('card_color', '#ffffff') }};
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      
+      .controls-sidebar {
+        width: 100%;
+        margin-bottom: 15px;
+        margin-top: 10px;
+        background-color: {{ site_settings.get('card_color', '#ffffff') }};
+        padding: 12px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        order: -1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .controls-sidebar .filter-bar {
+        background: {{ site_settings.primary_color }};
+        padding: 8px 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 0;
+      }
+      
+      .controls-sidebar .filter-row {
+        flex-wrap: wrap;
+      }
+      
+      .controls-sidebar .filter-row-actions .filter-btn,
+      .controls-sidebar .filter-row-actions .clear-btn {
+        flex: 1;
+        min-width: 80px;
+      }
+    }
+    
+    /* Compact filter bar - horizontal inline layout */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+      padding: 8px 10px;
+      background-color: {{ site_settings.primary_color }};
+      border-radius: 10px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .filter-bar label {
+      color: {{ site_settings.text_color }};
+      font-weight: bold;
+      font-size: 0.85em;
+      white-space: nowrap;
+    }
+    .filter-bar select {
+      padding: 4px 6px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      background: {{ site_settings.get('card_color', '#ffffff') }};
+      color: {{ site_settings.text_color }};
+      font-size: 0.8em;
+      min-width: 60px;
+    }
+    .filter-btn,
+    .clear-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.8em;
+      white-space: nowrap;
+      text-decoration: none;
+      text-align: center;
+      transition: background-color 0.2s ease, opacity 0.2s ease;
+      height: 40px;
+      min-height: 40px;
+      line-height: 1;
+      box-sizing: border-box;
+    }
+    .filter-btn {
+      background-color: {{ site_settings.get('card_color', '#ffffff') }};
+      color: {{ site_settings.text_color }};
+    }
+    .filter-btn:hover {
+      background-color: {{ site_settings.secondary_color }};
+      opacity: 0.85;
+    }
+    .clear-btn {
+      background-color: transparent;
+      color: {{ site_settings.text_color }};
+      border: 2px solid {{ site_settings.get('card_color', '#ffffff') }};
+    }
+    .clear-btn:hover {
+      background-color: {{ site_settings.get('card_color', '#ffffff') }};
+      opacity: 0.85;
+    }
+    
+    /* At 500px and below: wrap to two rows */
+    @media (max-width: 500px) {
+      .filter-bar {
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .filter-bar label {
+        width: 100%;
+        text-align: center;
+      }
+      .filter-bar select,
+      .filter-btn,
+      .clear-btn {
+        flex: 1;
+        min-width: 60px;
+      }
+    }
+    
+    .toggle-btn {
+      display: block; width: 100%; max-width: 300px; margin: 0 auto 20px;
+      padding: 12px 20px; background-color: {{ site_settings.primary_color }};
+      color: {{ site_settings.text_color }}; border-radius: 8px;
+      font-weight: bold; cursor: pointer; border: none;
+    }
+    .toggle-btn:hover { background-color: {{ site_settings.secondary_color }}; }
+    
+    .event-card { border-bottom: 1px solid {{ site_settings.secondary_color }}; margin-bottom: 15px; padding-bottom: 15px; }
+    .event-title a { color: {{ site_settings.primary_color }}; font-weight: bold; font-size: 1.2em; text-decoration: underline; }
+    .event-username-tag { font-size: 0.7em; padding: 3px 8px; border-radius: 10px; background: {{ site_settings.secondary_color }}; color: {{ site_settings.text_color }}; margin-left: 8px; }
+    .event-date { color: {{ site_settings.text_color }}; margin-top: 5px; font-size: 0.9em; }
+    .notes-box { background-color: {{ site_settings.secondary_color }}; color: {{ site_settings.text_color }}; padding: 12px; border-radius: 8px; margin: 10px 0; white-space: pre-wrap; }
+    .edit-btn { background-color: {{ site_settings.secondary_color }}; color: {{ site_settings.text_color }}; padding: 8px 14px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; }
+    .edit-btn:hover { background-color: {{ site_settings.primary_color }}; }
+    
+    /* Today divider between past and upcoming events */
+    .divider-wrapper {
+      margin: 20px 0;
+      padding: 0;
+      border-bottom: 1px solid {{ site_settings.secondary_color }};
+      padding-bottom: 15px;
+    }
+    .today-divider {
+      background: {{ site_settings.background_color }};
+      color: {{ site_settings.text_color }};
+      font-size: 1.2em;
+      font-weight: bold;
+      text-align: center;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    /* Media preview - autoplay videos muted */
+    .media-preview { display: flex; gap: 8px; overflow-x: auto; margin-top: 10px; }
+    .media-preview img { 
+      max-height: 100px; width: 100px; border-radius: 6px; 
+      object-fit: cover; cursor: pointer; flex-shrink: 0;
+    }
+    .media-preview video {
+      max-height: 100px; width: 100px; border-radius: 6px;
+      object-fit: cover; cursor: pointer; flex-shrink: 0;
+    }
+    
+    /* Pinned bottom pagination bar - all viewports */
+    .pagination {
+      display: flex; justify-content: center; gap: 4px; flex-wrap: nowrap;
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: calc(100% - 40px); max-width: 800px;
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      background-color: {{ site_settings.get('card_color', '#ffffff') }};
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
+      z-index: 999;
+      border-radius: 12px 12px 0 0;
+      box-sizing: border-box;
+    }
+    .pagination a {
+      flex: 1; text-align: center;
+      padding: 10px 4px; font-size: 0.9em; white-space: nowrap;
+      background: {{ site_settings.secondary_color }};
+      color: {{ site_settings.text_color }};
+      border-radius: 8px; text-decoration: none; font-weight: bold;
+    }
+    .pagination a:hover, .pagination a.active { background: {{ site_settings.primary_color }}; }
+    .pagination .pag-ellipsis {
+      flex: 0 0 auto; text-align: center; padding: 10px 4px;
+      font-size: 0.9em; color: {{ site_settings.text_color }}; opacity: 0.5;
+      pointer-events: none; user-select: none;
+    }
+
+    /* Add bottom padding so last event card isn't hidden behind pinned bar */
+    .event-wrapper { padding-bottom: 80px; }
+    
+    /* Add extra bottom padding to footer so pinned bar doesn't overlay it */
+    footer {
+      padding-bottom: 100px !important;
+    }
+    
+    /* Viewer styles moved to base.css */
+    
+    .comment-preview { max-height: 100px; width: 100px; border-radius: 6px; background: {{ site_settings.secondary_color }}; padding: 8px; overflow: hidden; font-size: 0.7em; cursor: pointer; flex-shrink: 0; }
+    .comment-preview.long-comment { width: 200px; }
+    .comment-preview-username { font-weight: bold; color: {{ site_settings.text_color }}; margin-bottom: 4px; }
+    .comment-preview-text { color: {{ site_settings.text_color }}; overflow: hidden; text-overflow: ellipsis; }
+    
+    @media (max-width: 500px) {
+      .filter-bar { flex-wrap: wrap; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  {% include 'header.html' %}
+  <div class="main-content">
+    <h1>{{ page_title }}</h1>
+    {% include '_flash.html' %}
+    <div class="events-layout">
+      <div class="event-wrapper">
+        <div id="event-list" data-today-label="{{ site_settings.get('today_divider_label', '📅 Today') }}">
+          {% for event in events %}
+          <div class="event-card" data-past="{{ 'true' if event.is_past else 'false' }}">
+            <div class="event-title">
+              <a href="/event/{{ event.id }}">{{ event.title }}</a>
+              {% if event.get('username') %}<span class="event-username-tag">@{{ event['username'] }}</span>{% endif %}
+            </div>
+            <div class="event-date"><strong>Start:</strong> {{ event.start }}</div>
+            {% if event.end %}<div class="event-date"><strong>End:</strong> {{ event.end }}</div>{% endif %}
+            {% if event.notes %}<div class="notes-box">{{ event.notes }}</div>{% endif %}
+            {% if event.photos or event.videos or event.get('comments') %}
+            <div class="media-preview">
+              {% for photo in event.photos %}
+                {% set pfilename = photo.filename if photo is mapping else photo %}
+                <img src="/thumb/sm/event_photos/{{ pfilename }}" data-full="/photo/event_photos/{{ pfilename }}" data-viewer-full="/thumb/xl/event_photos/{{ pfilename }}" data-event-title="{{ event.title }}" loading="lazy" decoding="async" width="100" height="100" alt="Event photo">
+              {% endfor %}
+              {% for video in event.videos %}
+                {% set vfilename = video.filename if video is mapping else video %}
+                <video data-event-title="{{ event.title }}" data-full="/video/event_videos/{{ vfilename }}" muted loop playsinline webkit-playsinline preload="none" poster="/thumb/sm/event_videos/{{ vfilename }}" width="100" height="100">
+                  <source src="/video/event_videos/{{ vfilename }}" type="{{ 'video/webm' if vfilename.lower().endswith('.webm') else 'video/mp4' }}">
+                </video>
+              {% endfor %}
+              {% if event.get('comments') %}
+                {% for comment in event.comments %}
+                  <div class="comment-preview {% if comment.text|length > 40 %}long-comment{% endif %}" onclick="location.href='/event/{{ event.id }}'">
+                    <div class="comment-preview-username">@{{ comment.username }}</div>
+                    <div class="comment-preview-text">{{ comment.text }}</div>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        
+        {% if total_pages > 1 %}
+        <div class="pagination">
+          {% set base = 'past=' ~ ('1' if show_past else '0') %}
+          {% if start_month is not none and start_year is not none %}{% set base = base ~ '&start_month=' ~ start_month ~ '&start_year=' ~ start_year %}{% endif %}
+          {% if current_page > 1 %}<a href="/events?{{ base }}&page={{ current_page - 1 }}">Prev</a>{% endif %}
+          {% for p in page_nums %}
+            {% if p == '...' %}
+              <span class="pag-ellipsis">...</span>
+            {% else %}
+              <a href="/events?{{ base }}&page={{ p }}" {% if p == current_page %}class="active"{% endif %}>{{ p }}</a>
+            {% endif %}
+          {% endfor %}
+          {% if current_page < total_pages %}<a href="/events?{{ base }}&page={{ current_page + 1 }}">Next</a>{% endif %}
+        </div>
+        {% endif %}
+      </div>
+      
+      <div class="controls-sidebar">
+        <form method="get" action="/events" class="filter-bar">
+          <input type="hidden" name="past" value="{{ '1' if show_past else '0' }}">
+          <input type="hidden" name="page" value="1">
+          <label>Filter:</label>
+          <select name="start_month">
+            <option value="">Month</option>
+            {% for m in range(1, 13) %}
+              <option value="{{ m }}" {% if start_month == m %}selected{% endif %}>{{ ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1] }}</option>
+            {% endfor %}
+          </select>
+          <select name="start_year" id="yearSelect">
+            <option value="">Year</option>
+            {% for y in range(2020, 2036) %}
+              <option value="{{ y }}" {% if start_year == y %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="filter-btn">Go</button>
+          <a href="/events?past={{ '1' if show_past else '0' }}" class="clear-btn">Clear</a>
+        </form>
+        
+        <button class="toggle-btn" onclick="location.href='/events?past={{ '0' if show_past else '1' }}&page=1'">{{ site_settings.get('show_upcoming_label', 'Show Upcoming Events') if show_past else site_settings.get('show_past_label', 'Show All Events') }}</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Fullscreen Viewer -->
+  <div id="fullscreen-viewer" class="fullscreen-viewer">
+    <div class="event-title-overlay" id="event-title-overlay"></div>
+    <div class="viewer-close" id="viewer-close">&times;</div>
+    <div class="nav-arrow left" id="prev-arrow">&#10094;</div>
+    <div class="nav-arrow right" id="next-arrow">&#10095;</div>
+    <div class="media-counter" id="media-counter"></div>
+    <div class="thumb-strip" id="thumb-strip"></div>
+  </div>
+
+  <!-- iOS detection -->
+  <script>
+    (function() {
+      var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (isIOS) document.documentElement.classList.add('ios');
+
+      // Mobile uses custom pinch-to-zoom in the viewer (same as desktop).
+      // Viewport is locked while the viewer is active to prevent native
+      // page zoom from interfering. Desktop also locks page zoom to avoid
+      // the whole page scaling on trackpad pinch.
+      var isMobile = (('ontouchstart' in window) || navigator.maxTouchPoints > 0) &&
+                     window.matchMedia('(pointer: coarse)').matches;
+      if (isMobile) {
+        document.documentElement.classList.add('is-mobile');
+      }
+    })();
+  </script>
+
+  <script src="{{ static_url('js/events.js') }}"></script>
+  </div> <!-- end .main-content -->
+  {% include 'footer.html' %}
+</body>
+</html>

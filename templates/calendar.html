@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>{{ site_settings.get('calendar_label', 'Calendar') }}</title>
+  <link rel="preload" href="/static/fonts/handcaps.otf" as="font" type="font/otf" crossorigin="anonymous">
+  <link rel="stylesheet" href="{{ static_url('fonts/fonts.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/base.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/fullcalendar.min.css') }}">
+  <style>
+    @font-face {
+      font-family: 'Handcaps';
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url('/static/fonts/handcaps.otf') format('opentype');
+    }
+    html {
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    *, *::before, *::after {
+      font-family: {{ site_settings.get('body_font', 'handcaps') | get_font_family | safe }} !important;
+    }
+    a, a *, button, button *, input[type="submit"], select, select *,
+    .nav-btn, .nav-btn *, .btn, .btn *, .user-dropdown, .user-dropdown *,
+    .dropdown-menu a, .dropdown-menu a *, .fc-button, .fc-button * {
+      font-family: {{ site_settings.get('button_font', 'comic-sans') | get_font_family | safe }} !important;
+    }
+    body {
+      background-color: {{ site_settings.background_color }};
+      color: {{ site_settings.text_color }};
+      font-size: 1.2em;
+      padding: 20px;
+      padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+      min-height: 100vh;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .main-content {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1 { text-align: center; color: {{ site_settings.primary_color }}; margin-bottom: 20px; }
+    .nav-btn { background-color: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; }
+    .nav-btn:hover { background-color: {{ site_settings.secondary_color }}; }
+    .user-dropdown { background-color: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    @media (hover: hover) and (pointer: fine) { .user-dropdown:hover { background-color: {{ site_settings.secondary_color }}; } }
+    .user-dropdown.active { background-color: {{ site_settings.secondary_color }}; }
+    .dropdown-menu { display: none; background-color: {{ site_settings.get('card_color', '#ffffff') }}; }
+    .dropdown-menu.show { display: block; }
+    .dropdown-menu a { color: {{ site_settings.text_color }}; }
+    .dropdown-menu a:hover { background-color: {{ site_settings.secondary_color }}; }
+    .calendar-wrapper { max-width: 800px; margin: auto; }
+    .add-event-form {
+      background-color: {{ site_settings.get('card_color', '#ffffff') }};
+      padding: 20px; border-radius: 12px; margin-bottom: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .add-event-form h2 { color: {{ site_settings.primary_color }}; margin-bottom: 15px; }
+    .add-event-form label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .add-event-form input, .add-event-form textarea {
+      width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; padding: 10px; margin-bottom: 15px;
+      border: 2px solid {{ site_settings.secondary_color }}; border-radius: 8px;
+      background: {{ site_settings.get('card_color', '#ffffff') }}; color: {{ site_settings.text_color }};
+      overflow: hidden;
+    }
+    .add-event-form input[type="datetime-local"] {
+      /* iOS Safari datetime picker needs extra containment to prevent overflow */
+      -webkit-appearance: none;
+      appearance: none;
+      padding-right: 8px;
+    }
+    .add-event-form button {
+      width: 100%; padding: 12px; background: {{ site_settings.primary_color }};
+      color: {{ site_settings.text_color }}; border: none; border-radius: 8px;
+      font-weight: bold; cursor: pointer;
+    }
+    .add-event-form button:hover { background: {{ site_settings.secondary_color }}; }
+    .drop-zone {
+      border: 2px dashed {{ site_settings.secondary_color }}; border-radius: 8px;
+      padding: 20px; text-align: center; margin-bottom: 15px;
+      cursor: pointer; transition: background 0.2s, border-color 0.2s;
+      min-height: 60px; display: flex; align-items: center; justify-content: center;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      background: {{ site_settings.secondary_color }}20; border-color: {{ site_settings.primary_color }};
+    }
+    .drop-zone-text { color: {{ site_settings.text_color }}80; font-size: 14px; }
+    .file-previews { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+    .file-preview {
+      position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden;
+      border: 2px solid {{ site_settings.secondary_color }};
+    }
+    .file-preview img, .file-preview video { width: 100%; height: 100%; object-fit: cover; }
+    .file-preview .remove-file {
+      position: absolute; top: 2px; right: 2px; width: 20px; height: 20px;
+      background: red; color: white; border: none; border-radius: 50%;
+      font-size: 12px; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; line-height: 1;
+    }
+    .calendar-card {
+      background-color: {{ site_settings.get('card_color', '#ffffff') }};
+      padding: 20px; border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .fc { color: {{ site_settings.text_color }}; }
+    .fc-toolbar-title { color: {{ site_settings.primary_color }}; }
+    .fc-button { background: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; border: none; }
+    .fc-button:hover { background: {{ site_settings.secondary_color }}; }
+    .fc-button-primary { background: {{ site_settings.primary_color }}; }
+    .fc-event { background: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; border: none; }
+    .fc-daygrid-day.fc-day-today { background: {{ site_settings.secondary_color }}40; }
+  </style>
+</head>
+<body>
+  {% include 'header.html' %}
+  <div class="main-content">
+  <h1>{{ site_settings.get('calendar_page_header', 'Calendar') }}</h1>
+  {% include '_flash.html' %}
+  <div class="calendar-wrapper">
+    <form class="add-event-form" id="addEventForm" action="/add_event" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <h2>➕ Add New Event</h2>
+      <label for="title">Event Title</label>
+      <input type="text" id="title" name="title" required placeholder="What's happening?">
+      <label for="start">Start Date & Time</label>
+      <input type="datetime-local" id="start" name="start" required>
+      <label for="end">End Date & Time (optional)</label>
+      <input type="datetime-local" id="end" name="end">
+      <label for="notes">Notes (optional)</label>
+      <textarea id="notes" name="notes" rows="3" placeholder="Add any details..."></textarea>
+      <label for="media">Photos/Videos (optional)</label>
+      <div class="drop-zone" id="dropZone">
+        <span class="drop-zone-text">Drop photos/videos here or click to browse</span>
+        <input type="file" id="media" name="media" accept="image/*,video/*" multiple style="display:none">
+      </div>
+      <div class="file-previews" id="filePreviews"></div>
+      <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; cursor: pointer;">
+        <input type="checkbox" name="repeat_yearly" style="width: auto; margin: 0; cursor: pointer;">
+        Repeat yearly
+      </label>
+      <button type="submit">Create Event</button>
+    </form>
+    <div class="calendar-card">
+      <div id="calendar"></div>
+    </div>
+  </div>
+  <script src="{{ static_url('js/fullcalendar.min.js') }}"></script>
+  <script>
+    (function() {
+      var accumulatedFiles = [];
+
+      var dropZone = document.getElementById('dropZone');
+      var fileInput = document.getElementById('media');
+      var previews = document.getElementById('filePreviews');
+      var form = document.getElementById('addEventForm');
+
+      if (!dropZone) return;
+
+      // Click drop zone to open file picker
+      dropZone.addEventListener('click', function() {
+        fileInput.click();
+      });
+
+      // Handle file input change
+      fileInput.addEventListener('change', function() {
+        addFiles(this.files);
+        this.value = '';
+      });
+
+      // Drag and drop handlers
+      dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+      });
+
+      dropZone.addEventListener('dragleave', function() {
+        dropZone.classList.remove('dragover');
+      });
+
+      dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('dragover');
+        addFiles(e.dataTransfer.files);
+      });
+
+      // Also handle drops on the whole form area (not just the drop zone)
+      form.addEventListener('dragover', function(e) { e.preventDefault(); });
+      form.addEventListener('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer.files.length > 0) {
+          addFiles(e.dataTransfer.files);
+        }
+      });
+
+      function addFiles(files) {
+        for (var i = 0; i < files.length; i++) {
+          var f = files[i];
+          if (f.type.startsWith('image/') || f.type.startsWith('video/')) {
+            accumulatedFiles.push(f);
+          }
+        }
+        renderPreviews();
+      }
+
+      function renderPreviews() {
+        previews.innerHTML = '';
+        accumulatedFiles.forEach(function(f, idx) {
+          var div = document.createElement('div');
+          div.className = 'file-preview';
+
+          var media;
+          if (f.type.startsWith('image/')) {
+            media = document.createElement('img');
+            media.src = URL.createObjectURL(f);
+          } else {
+            media = document.createElement('video');
+            media.src = URL.createObjectURL(f);
+            media.muted = true;
+          }
+          div.appendChild(media);
+
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'remove-file';
+          btn.textContent = '✕';
+          btn.addEventListener('click', function() {
+            accumulatedFiles.splice(idx, 1);
+            renderPreviews();
+          });
+          div.appendChild(btn);
+          previews.appendChild(div);
+        });
+      }
+
+      // On form submit, replace the file input's files with accumulated ones
+      form.addEventListener('submit', function(e) {
+        if (accumulatedFiles.length === 0) return;
+
+        e.preventDefault();
+
+        var dt = new DataTransfer();
+        accumulatedFiles.forEach(function(f) {
+          dt.items.add(f);
+        });
+        fileInput.files = dt.files;
+
+        form.submit();
+      });
+
+      // Clear accumulated files when form is reset (e.g., after successful submit redirect)
+      // This happens naturally since page reloads, but just in case:
+      window.addEventListener('beforeunload', function() {
+        accumulatedFiles = [];
+      });
+    })();
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var calendarEl = document.getElementById('calendar');
+      var events = {{ events | default([]) | tojson | safe }};
+      if (typeof FullCalendar !== 'undefined' && events) {
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          events: events.map(function(e) {
+            return { id: e.id, title: e.title, start: e.start, end: e.end || null };
+          }),
+          eventClick: function(info) { window.location.href = '/event/' + info.event.id; }
+        });
+        calendar.render();
+      } else {
+        calendarEl.innerHTML = '<p style="text-align:center;padding:40px;">Calendar loading... If this persists, check that fullcalendar.min.js is in /static/js/</p>';
+      }
+    });
+  </script>
+  </div> <!-- end .main-content -->
+  {% include 'footer.html' %}
+</body>
+</html>

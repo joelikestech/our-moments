@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Admin Settings</title>
+    
+    <!-- Preload fonts -->
+    <link rel="preload" href="/static/fonts/handcaps.otf" as="font" type="font/otf" crossorigin="anonymous">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ static_url('fonts/fonts.css') }}">
+    <link rel="stylesheet" href="{{ static_url('css/base.css') }}">
+    
+    <style>
+        /* ===========================================
+           FONT DEFINITIONS - Uses site's selected fonts
+           =========================================== */
+        
+        /* Inline font-face for custom fonts */
+        @font-face {
+            font-family: 'Handcaps';
+            font-style: normal;
+            font-weight: 100 900;
+            font-display: swap;
+            src: url('/static/fonts/handcaps.otf') format('opentype');
+        }
+        
+        /* Prevent mobile font scaling issues */
+        html {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        
+        /* Body font for ALL text elements - uses site's selected body font */
+        *, *::before, *::after {
+            font-family: {{ site_settings.get('body_font', 'arial') | get_font_family | safe }} !important;
+        }
+        
+        /* Button font for clickable elements - uses site's selected button font */
+        a, a *, button, button *, input[type="submit"], input[type="button"], 
+        select, select *, .nav-btn, .nav-btn *, .btn, .btn *, 
+        .user-dropdown, .user-dropdown *, .dropdown-menu a, .dropdown-menu a *,
+        .tab, .tab *, .theme-card, .theme-card *, .btn-submit, .btn-submit * {
+            font-family: {{ site_settings.get('button_font', 'arial') | get_font_family | safe }} !important;
+        }
+        
+        /* EXCEPTION: Reset button ALWAYS uses safe system font for emergency access */
+        .reset-btn, .reset-btn *, .reset-section, .reset-section * {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
+        }
+        
+        /* EXCEPTION: Font preview area - fonts are set dynamically via JavaScript */
+        #full-preview-body, #full-preview-body *,
+        #full-preview-buttons, #full-preview-buttons * {
+            font-family: inherit;
+        }
+        
+        /* ===========================================
+           PAGE STYLES
+           =========================================== */
+        
+        body {
+            background-color: {{ site_settings.background_color }};
+            color: {{ site_settings.text_color }};
+            font-size: 1.2em;
+            padding: 20px;
+            padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+            min-height: 100vh;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .main-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Header Navigation */
+        .nav-btn {
+            background-color: {{ site_settings.primary_color }};
+            color: {{ site_settings.text_color }};
+        }
+        
+        .nav-btn:hover {
+            background-color: {{ site_settings.secondary_color }};
+        }
+        
+        .user-dropdown {
+            background-color: {{ site_settings.primary_color }};
+            color: {{ site_settings.text_color }};
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        @media (hover: hover) and (pointer: fine) {
+            .user-dropdown:hover {
+                background-color: {{ site_settings.secondary_color }};
+            }
+        }
+        
+        .user-dropdown.active {
+            background-color: {{ site_settings.secondary_color }};
+        }
+        
+        .dropdown-menu {
+            background-color: {{ site_settings.get('card_color', '#ffffff') }};
+        }
+        
+        .dropdown-menu a {
+            color: {{ site_settings.text_color }};
+        }
+        
+        .dropdown-menu a:hover {
+            background-color: {{ site_settings.secondary_color }};
+        }
+        
+        /* Page Title */
+        h1 {
+            text-align: center;
+            color: {{ site_settings.primary_color }};
+            margin-bottom: 20px;
+        }
+        
+        /* Main Container - Card Style */
+        .admin-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: {{ site_settings.get('card_color', '#ffffff') }};
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        /* Emergency Reset Section */
+        .reset-section {
+            background: #1a1a1a;
+            margin: -30px -30px 30px -30px;
+            padding: 15px 30px;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .reset-info {
+            color: #ffffff;
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .reset-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 1em;
+        }
+        
+        .reset-info p {
+            margin: 0;
+            font-size: 0.85em;
+            color: #aaa;
+        }
+        
+        .reset-btn {
+            background: #ff4757;
+            color: white;
+            border: 3px solid white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+        
+        .reset-btn:hover {
+            background: #ff6b81;
+            transform: scale(1.05);
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 30px;
+            background: {{ site_settings.background_color }};
+            padding: 8px;
+            border-radius: 12px;
+        }
+        
+        .tab {
+            flex: 1 1 auto;
+            min-width: 130px;
+            padding: 14px 20px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            font-weight: 600;
+            color: {{ site_settings.text_color }};
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        
+        .tab:hover {
+            background: {{ site_settings.secondary_color }};
+        }
+        
+        .tab.active {
+            background: {{ site_settings.primary_color }};
+            color: {{ site_settings.text_color }};
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 30px 0 20px 0;
+            padding-bottom: 15px;
+            border-bottom: 2px solid {{ site_settings.secondary_color }};
+        }
+        
+        .section-header:first-child {
+            margin-top: 0;
+        }
+        
+        .section-header h2 {
+            margin: 0;
+            font-size: 1.3em;
+            color: {{ site_settings.primary_color }};
+        }
+
+        /* ===========================================
+           PROGRESS BAR ANIMATION - shimmer effect
+           Makes bars look active during long operations
+           =========================================== */
+        @keyframes progress-shimmer {
+            0% { background-position: 0 0; }
+            100% { background-position: 60px 0; }
+        }
+        .progress-shimmer {
+            background-image: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 15px,
+                rgba(255,255,255,0.2) 15px,
+                rgba(255,255,255,0.2) 30px
+            ) !important;
+            background-size: 60px 100% !important;
+            animation: progress-shimmer 1.2s linear infinite !important;
+        }
+
+        .section-icon {
+            width: 40px;
+            height: 40px;
+            background: {{ site_settings.primary_color }};
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+        }
+        
+        /* Form Elements */
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: {{ site_settings.text_color }};
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .hint {
+            color: {{ site_settings.text_color }};
+            opacity: 0.6;
+            font-size: 12px;
+            margin-top: 6px;
+        }
+        
+        input[type="text"],
+        input[type="color"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid {{ site_settings.secondary_color }};
+            border-radius: 10px;
+            font-size: 15px;
+            background: {{ site_settings.get('card_color', '#ffffff') }};
+            color: {{ site_settings.text_color }};
+            transition: border-color 0.2s ease;
+        }
+        
+        input[type="text"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: {{ site_settings.primary_color }};
+        }
+        
+        input[type="color"] {
+            height: 50px;
+            padding: 6px;
+            cursor: pointer;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 40px;
+        }
+        
+        /* Color Preview */
+        .color-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .color-preview {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: 2px solid {{ site_settings.secondary_color }};
+        }
+        
+        /* Theme Grid */
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .theme-card {
+            padding: 20px 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s ease;
+            text-align: center;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .theme-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        
+        .theme-card.selected {
+            border-color: {{ site_settings.text_color }};
+        }
+        
+        .theme-default { background: linear-gradient(135deg, #d0e8f2, #f7b7cd); color: #333; }
+        .theme-dark { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #64b5f6; }
+        .theme-forest { background: linear-gradient(135deg, #2d4a3e, #4a7c59); color: #e8f5e9; }
+        .theme-sunset { background: linear-gradient(135deg, #ff6b6b, #feca57); color: #2c3e50; }
+        .theme-ocean { background: linear-gradient(135deg, #00b4d8, #0077b6); color: white; }
+        .theme-lavender { background: linear-gradient(135deg, #e0b0ff, #c77dff); color: #240046; }
+        
+        /* Font Preview */
+        .font-preview {
+            padding: 20px;
+            background: {{ site_settings.background_color }};
+            border-radius: 10px;
+            margin-top: 10px;
+            border: 2px dashed {{ site_settings.secondary_color }};
+            font-size: 1.1em;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: font-family 0.3s ease;
+        }
+        
+        /* Font Upload Section */
+        .font-upload-section {
+            margin-top: 30px;
+            padding: 25px;
+            background: {{ site_settings.secondary_color }}20;
+            border-radius: 12px;
+            border: 2px solid {{ site_settings.secondary_color }};
+        }
+        
+        /* Submit Button */
+        .submit-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid {{ site_settings.secondary_color }};
+        }
+        
+        .btn-submit {
+            width: 100%;
+            padding: 18px;
+            background: {{ site_settings.primary_color }};
+            color: {{ site_settings.text_color }};
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-submit:hover {
+            background: {{ site_settings.secondary_color }};
+            transform: translateY(-2px);
+        }
+        
+        /* Alerts */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background: {{ site_settings.secondary_color }};
+            color: {{ site_settings.text_color }};
+        }
+        
+        .alert-danger {
+            background: #ffcccc;
+            color: #721c24;
+        }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            
+            .admin-container {
+                padding: 15px;
+                border-radius: 12px;
+            }
+            
+            .reset-section {
+                margin: -15px -15px 20px -15px;
+                padding: 15px;
+                flex-direction: column;
+                text-align: center;
+                border-radius: 12px 12px 0 0;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include 'header.html' %}
+    <div class="main-content">
+    <h1>⚙️ Admin Settings</h1>
+    
+    <div class="admin-container">
+        <!-- Emergency Reset Section -->
+        <div class="reset-section">
+            <div class="reset-info">
+                <h3>🆘 Can't See the Site?</h3>
+                <p>If colors or fonts make text unreadable, reset to safe defaults instantly</p>
+            </div>
+            <form action="{{ url_for('reset_colors') }}" method="POST" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="reset-btn" onclick="return confirm('Reset all colors AND fonts to safe defaults?')">
+                    🔄 Reset Colors & Fonts
+                </button>
+            </form>
+        </div>
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Tabs -->
+        <div class="tabs">
+            <button type="button" class="tab active" onclick="switchTab('appearance')" data-tab="appearance">🎨 Appearance</button>
+            <button type="button" class="tab" onclick="switchTab('fonts')" data-tab="fonts">✏️ Fonts</button>
+            <button type="button" class="tab" onclick="switchTab('content')" data-tab="content">📝 Content</button>
+            <button type="button" class="tab" onclick="switchTab('security')" data-tab="security">🔒 Security</button>
+            <button type="button" class="tab" onclick="switchTab('import_export')" data-tab="import_export">📦 Import/Export</button>
+            <button type="button" class="tab" onclick="switchTab('media')" data-tab="media">🎬 Media</button>
+        </div>
+        
+        <form method="POST" action="{{ url_for('admin_settings') }}" id="settings-form">
+            <input type="hidden" name="active_tab" id="active_tab" value="{{ request.args.get('tab', 'appearance') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <!-- Appearance Tab -->
+            <div id="appearance-tab" class="tab-content active">
+                <div class="section-header">
+                    <div class="section-icon">🎭</div>
+                    <h2>Theme Presets</h2>
+                </div>
+                <p class="hint">Choose a preset theme or customize colors below</p>
+                <input type="hidden" id="theme" name="theme" value="{{ settings.theme }}">
+                <div class="theme-grid">
+                    <div class="theme-card theme-default {% if settings.theme == 'default' %}selected{% endif %}" onclick="selectTheme('default', this)">
+                        Default<br><small>Pink & Blue</small>
+                    </div>
+                    <div class="theme-card theme-dark {% if settings.theme == 'dark' %}selected{% endif %}" onclick="selectTheme('dark', this)">
+                        Dark<br><small>Midnight</small>
+                    </div>
+                    <div class="theme-card theme-forest {% if settings.theme == 'forest' %}selected{% endif %}" onclick="selectTheme('forest', this)">
+                        Forest<br><small>Nature</small>
+                    </div>
+                    <div class="theme-card theme-sunset {% if settings.theme == 'sunset' %}selected{% endif %}" onclick="selectTheme('sunset', this)">
+                        Sunset<br><small>Warm</small>
+                    </div>
+                    <div class="theme-card theme-ocean {% if settings.theme == 'ocean' %}selected{% endif %}" onclick="selectTheme('ocean', this)">
+                        Ocean<br><small>Cool Blue</small>
+                    </div>
+                    <div class="theme-card theme-lavender {% if settings.theme == 'lavender' %}selected{% endif %}" onclick="selectTheme('lavender', this)">
+                        Lavender<br><small>Purple</small>
+                    </div>
+                </div>
+                
+                <div class="section-header">
+                    <div class="section-icon">🎨</div>
+                    <h2>Custom Colors</h2>
+                </div>
+                <p class="hint">Modify individual colors (sets theme to "Custom")</p>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="color-label">
+                            <span class="color-preview" style="background: {{ settings.background_color }};"></span>
+                            <label>Background Color</label>
+                        </div>
+                        <input type="color" name="background_color" value="{{ settings.background_color }}" onchange="markCustom()">
+                    </div>
+                    <div class="form-group">
+                        <div class="color-label">
+                            <span class="color-preview" style="background: {{ settings.primary_color }};"></span>
+                            <label>Primary Color (Buttons)</label>
+                        </div>
+                        <input type="color" name="primary_color" value="{{ settings.primary_color }}" onchange="markCustom()">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="color-label">
+                            <span class="color-preview" style="background: {{ settings.secondary_color }};"></span>
+                            <label>Secondary Color (Accents)</label>
+                        </div>
+                        <input type="color" name="secondary_color" value="{{ settings.secondary_color }}" onchange="markCustom()">
+                    </div>
+                    <div class="form-group">
+                        <div class="color-label">
+                            <span class="color-preview" style="background: {{ settings.text_color }};"></span>
+                            <label>Text Color</label>
+                        </div>
+                        <input type="color" name="text_color" value="{{ settings.text_color }}" onchange="markCustom()">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="color-label">
+                            <span class="color-preview" style="background: {{ settings.get('card_color', '#ffffff') }};"></span>
+                            <label>Card Background</label>
+                        </div>
+                        <input type="color" name="card_color" value="{{ settings.get('card_color', '#ffffff') }}" onchange="markCustom()">
+                    </div>
+                </div>
+                
+                <!-- Custom Color Presets -->
+                <div class="section-header" style="margin-top: 30px;">
+                    <div class="section-icon">💾</div>
+                    <h2>Saved Presets</h2>
+                </div>
+                <p class="hint">Save your current colors as a preset to reuse later</p>
+                
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px;">
+                    <input type="text" id="preset_name" placeholder="Preset name..." style="flex: 1; min-width: 150px; padding: 10px; border-radius: 8px; border: 2px solid {{ site_settings.secondary_color }}; background: {{ site_settings.background_color }}; color: {{ site_settings.text_color }};">
+                    <button type="button" onclick="saveColorPreset()" style="background: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">💾 Save Current Colors</button>
+                </div>
+                
+                <div id="custom-presets" class="theme-grid">
+                    {% for preset in settings.get('custom_presets', []) %}
+                    <div class="theme-card" style="background: linear-gradient(135deg, {{ preset.background_color }} 0%, {{ preset.primary_color }} 50%, {{ preset.secondary_color }} 100%); position: relative;" onclick="loadPreset('{{ preset.name }}')">
+                        <span style="background: {{ preset.card_color }}; color: {{ preset.text_color }}; padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">{{ preset.name }}</span>
+                        <button type="button" onclick="event.stopPropagation(); deletePreset('{{ preset.name }}')" style="position: absolute; top: 5px; right: 5px; background: #ff6b6b; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; cursor: pointer; line-height: 1;">×</button>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="hint" style="margin-top: 10px;" id="no-presets-msg" {% if settings.get('custom_presets', []) %}style="display: none;"{% endif %}>No saved presets yet. Create one above!</p>
+            </div>
+
+            <!-- Fonts Tab -->
+            <div id="fonts-tab" class="tab-content">
+                <div class="section-header">
+                    <div class="section-icon">✏️</div>
+                    <h2>Font Settings</h2>
+                </div>
+                <p class="hint">Choose fonts for your site. The preview below updates live!</p>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Body Text Font (paragraphs, labels)</label>
+                        <select name="body_font" id="body_font" class="font-select">
+                            <option value="comic-sans" style="font-family: 'Comic Sans MS', cursive;" {% if settings.get('body_font', 'comic-sans') == 'comic-sans' %}selected{% endif %}>🎈 Comic Sans</option>
+                            <option value="arial" style="font-family: Arial, sans-serif;" {% if settings.get('body_font') == 'arial' %}selected{% endif %}>📝 Arial</option>
+                            <option value="georgia" style="font-family: Georgia, serif;" {% if settings.get('body_font') == 'georgia' %}selected{% endif %}>📖 Georgia</option>
+                            <option value="times" style="font-family: 'Times New Roman', serif;" {% if settings.get('body_font') == 'times' %}selected{% endif %}>📰 Times New Roman</option>
+                            <option value="verdana" style="font-family: Verdana, sans-serif;" {% if settings.get('body_font') == 'verdana' %}selected{% endif %}>💻 Verdana</option>
+                            <option value="trebuchet" style="font-family: 'Trebuchet MS', sans-serif;" {% if settings.get('body_font') == 'trebuchet' %}selected{% endif %}>🎯 Trebuchet MS</option>
+                            <option value="courier" style="font-family: 'Courier New', monospace;" {% if settings.get('body_font') == 'courier' %}selected{% endif %}>⌨️ Courier New</option>
+                            <option value="impact" style="font-family: Impact, sans-serif;" {% if settings.get('body_font') == 'impact' %}selected{% endif %}>💥 Impact</option>
+                            <option value="palatino" style="font-family: 'Palatino Linotype', serif;" {% if settings.get('body_font') == 'palatino' %}selected{% endif %}>✒️ Palatino</option>
+                            <option value="tahoma" style="font-family: Tahoma, sans-serif;" {% if settings.get('body_font') == 'tahoma' %}selected{% endif %}>🔤 Tahoma</option>
+                            <option value="system" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" {% if settings.get('body_font') == 'system' %}selected{% endif %}>🖥️ System Default</option>
+                            <option value="handcaps" style="font-family: 'Handcaps', cursive;" {% if settings.get('body_font') == 'handcaps' %}selected{% endif %}>✨ Handcaps (Custom)</option>
+                            {% for font in custom_fonts %}
+                            <option value="{{ font.name|lower }}" style="font-family: '{{ font.name }}', cursive;" {% if settings.get('body_font') == font.name|lower %}selected{% endif %}>⭐ {{ font.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Button/Link Font (clickable items)</label>
+                        <select name="button_font" id="button_font" class="font-select">
+                            <option value="comic-sans" style="font-family: 'Comic Sans MS', cursive;" {% if settings.get('button_font', 'comic-sans') == 'comic-sans' %}selected{% endif %}>🎈 Comic Sans</option>
+                            <option value="arial" style="font-family: Arial, sans-serif;" {% if settings.get('button_font') == 'arial' %}selected{% endif %}>📝 Arial</option>
+                            <option value="georgia" style="font-family: Georgia, serif;" {% if settings.get('button_font') == 'georgia' %}selected{% endif %}>📖 Georgia</option>
+                            <option value="times" style="font-family: 'Times New Roman', serif;" {% if settings.get('button_font') == 'times' %}selected{% endif %}>📰 Times New Roman</option>
+                            <option value="verdana" style="font-family: Verdana, sans-serif;" {% if settings.get('button_font') == 'verdana' %}selected{% endif %}>💻 Verdana</option>
+                            <option value="trebuchet" style="font-family: 'Trebuchet MS', sans-serif;" {% if settings.get('button_font') == 'trebuchet' %}selected{% endif %}>🎯 Trebuchet MS</option>
+                            <option value="courier" style="font-family: 'Courier New', monospace;" {% if settings.get('button_font') == 'courier' %}selected{% endif %}>⌨️ Courier New</option>
+                            <option value="impact" style="font-family: Impact, sans-serif;" {% if settings.get('button_font') == 'impact' %}selected{% endif %}>💥 Impact</option>
+                            <option value="palatino" style="font-family: 'Palatino Linotype', serif;" {% if settings.get('button_font') == 'palatino' %}selected{% endif %}>✒️ Palatino</option>
+                            <option value="tahoma" style="font-family: Tahoma, sans-serif;" {% if settings.get('button_font') == 'tahoma' %}selected{% endif %}>🔤 Tahoma</option>
+                            <option value="system" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" {% if settings.get('button_font') == 'system' %}selected{% endif %}>🖥️ System Default</option>
+                            <option value="handcaps" style="font-family: 'Handcaps', cursive;" {% if settings.get('button_font') == 'handcaps' %}selected{% endif %}>✨ Handcaps (Custom)</option>
+                            {% for font in custom_fonts %}
+                            <option value="{{ font.name|lower }}" style="font-family: '{{ font.name }}', cursive;" {% if settings.get('button_font') == font.name|lower %}selected{% endif %}>⭐ {{ font.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Full Page Preview Section -->
+                <div style="margin-top: 20px; padding: 15px; background: {{ site_settings.card_color }}; border-radius: 10px; border: 2px dashed {{ site_settings.primary_color }};">
+                    <h3 style="margin: 0 0 10px 0; color: {{ site_settings.primary_color }};">📱 Full Page Preview</h3>
+                    <p class="hint" style="margin-bottom: 10px;">See how your fonts will look on the actual site:</p>
+                    <div id="full-preview" style="background: {{ site_settings.background_color }}; padding: 15px; border-radius: 8px;">
+                        <div id="full-preview-body" style="margin-bottom: 15px;">
+                            <h2 style="color: {{ site_settings.primary_color }}; margin: 0 0 10px 0;">Welcome to My Site!</h2>
+                            <p style="color: {{ site_settings.text_color }}; margin: 0;">This is how your body text will appear on the site. The quick brown fox jumps over the lazy dog.</p>
+                        </div>
+                        <div id="full-preview-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <span style="background: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; padding: 8px 16px; border-radius: 6px; font-weight: bold;">Home</span>
+                            <span style="background: {{ site_settings.secondary_color }}; color: {{ site_settings.text_color }}; padding: 8px 16px; border-radius: 6px; font-weight: bold;">Events</span>
+                            <span style="background: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; padding: 8px 16px; border-radius: 6px; font-weight: bold;">Calendar</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Tab -->
+            <div id="content-tab" class="tab-content">
+                <div class="section-header">
+                    <div class="section-icon">📄</div>
+                    <h2>Site Texts</h2>
+                </div>
+                
+                <div class="form-group">
+                    <label>Site Title</label>
+                    <input type="text" name="site_title" value="{{ settings.site_title }}" required>
+                    <p class="hint">Appears at the top of your homepage</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Welcome Message</label>
+                    <textarea name="welcome_message">{{ settings.get('welcome_message', '') }}</textarea>
+                    <p class="hint">A greeting for visitors</p>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Footer Text</label>
+                        <input type="text" name="footer_text" value="{{ settings.get('footer_text', 'Made with ❤️') }}">
+                    </div>
+                    <div class="form-group">
+                        <label>Upload Placeholder</label>
+                        <input type="text" name="upload_placeholder" value="{{ settings.get('upload_placeholder', 'Write something cute here...') }}">
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <div class="section-icon">🏷️</div>
+                    <h2>Navigation Labels</h2>
+                </div>
+                <p class="hint">Include emojis in labels if you want them on the buttons</p>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Home Label</label>
+                        <input type="text" name="home_label" value="{{ settings.get('home_label', '🏠 Home') }}">
+                    </div>
+                    <div class="form-group">
+                        <label>Events Label</label>
+                        <input type="text" name="events_label" value="{{ settings.get('events_label', '📖 Events') }}">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Calendar Label</label>
+                        <input type="text" name="calendar_label" value="{{ settings.get('calendar_label', '📅 Calendar') }}">
+                    </div>
+                </div>
+                
+                <div class="section-header" style="margin-top: 20px;">
+                    <div class="section-icon">📄</div>
+                    <h2>Page Headers</h2>
+                </div>
+                <p class="hint">Customize the main heading on each page</p>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Events Page Header</label>
+                        <input type="text" name="events_page_header" value="{{ settings.get('events_page_header', 'Events') }}">
+                        <p class="hint">Shows as heading when viewing upcoming events</p>
+                    </div>
+                    <div class="form-group">
+                        <label>All Events Page Header</label>
+                        <input type="text" name="all_events_page_header" value="{{ settings.get('all_events_page_header', 'All Events') }}">
+                        <p class="hint">Shows as heading when viewing all/past events</p>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Calendar Page Header</label>
+                        <input type="text" name="calendar_page_header" value="{{ settings.get('calendar_page_header', 'Calendar') }}">
+                    </div>
+                </div>
+                
+                <div class="section-header" style="margin-top: 20px;">
+                    <div class="section-icon">📅</div>
+                    <h2>Events Page Labels</h2>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Show Past Events Button</label>
+                        <input type="text" name="show_past_label" value="{{ settings.get('show_past_label', 'Show All Events') }}">
+                        <p class="hint">Button text when viewing upcoming events</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Show Upcoming Events Button</label>
+                        <input type="text" name="show_upcoming_label" value="{{ settings.get('show_upcoming_label', 'Show Upcoming Events') }}">
+                        <p class="hint">Button text when viewing past events</p>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Today Divider Label</label>
+                        <input type="text" name="today_divider_label" value="{{ settings.get('today_divider_label', '📅 Today') }}">
+                        <p class="hint">Text shown between past and upcoming events</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Tab -->
+            <div id="security-tab" class="tab-content">
+                <div class="section-header">
+                    <div class="section-icon">🔐</div>
+                    <h2>Session & Security</h2>
+                </div>
+                <p class="hint">Control how long sessions last and when admins must re-authenticate</p>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Session Lifetime (Days)</label>
+                        <input type="number" name="session_lifetime_days" value="{{ settings.get('session_lifetime_days', 30) }}" min="1" max="90" step="1">
+                        <p class="hint">How long users stay logged in. Max 90 days. Current: <strong>{{ settings.get('session_lifetime_days', 30) }}</strong> days</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Admin Re-auth Window (Hours)</label>
+                        <input type="number" name="admin_reauth_hours" value="{{ settings.get('admin_reauth_hours', 4) }}" min="1" max="24" step="1">
+                        <p class="hint">How long admins can make changes before needing to log in again. Max 24 hours. Current: <strong>{{ settings.get('admin_reauth_hours', 4) }}</strong> hours</p>
+                    </div>
+                </div>
+                
+                <div class="section-header" style="margin-top: 20px;">
+                    <div class="section-icon">🚪</div>
+                    <h2>Registration</h2>
+                </div>
+                <p class="hint">Who can create an account on this site. Default is closed: only existing accounts can log in.</p>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Registration Mode</label>
+                        {% set reg_mode = settings.get('registration_mode', 'closed') %}
+                        <select name="registration_mode">
+                            <option value="closed" {% if reg_mode == 'closed' %}selected{% endif %}>🔒 Closed (recommended)</option>
+                            <option value="invite" {% if reg_mode == 'invite' %}selected{% endif %}>🎟️ Invite code required</option>
+                            <option value="open" {% if reg_mode == 'open' %}selected{% endif %}>🌐 Open to anyone</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Invite Code</label>
+                        <input type="text" name="registration_invite_code" value="{{ settings.get('registration_invite_code', '') }}" maxlength="64" autocomplete="off" placeholder="Share this with people you invite">
+                        <p class="hint">Only used in "Invite code required" mode.</p>
+                    </div>
+                </div>
+
+                <div class="section-header" style="margin-top: 20px;">
+                    <div class="section-icon">ℹ️</div>
+                    <h2>How It Works</h2>
+                </div>
+                <div style="background: {{ settings.get('card_color', '#ffffff') }}; padding: 15px; border-radius: 10px; border: 1px solid #eee;">
+                    <p>• <strong>Session Lifetime:</strong> All users (including admins) stay logged in for this duration. After it expires, they need to log in again.</p>
+                    <p>• <strong>Admin Re-auth:</strong> Even if an admin's session is still valid, they must re-login to make administrative changes if this time has passed since their last login.</p>
+                    <p>• This adds an extra layer of security: long sessions for convenience, but fresh re-auth for sensitive actions.</p>
+                </div>
+            </div>
+
+            <!-- Submit (only for settings form, hidden on import/export tab) -->
+            <div class="submit-section" id="settings-submit">
+                <button type="submit" class="btn-submit">💾 Save All Settings</button>
+            </div>
+        </form>
+
+        <!-- Import/Export Tab (outside main form to avoid nested forms) -->
+        <div id="import_export-tab" class="tab-content">
+            <div class="section-header">
+                <div class="section-icon">📤</div>
+                <h2>Export Data</h2>
+            </div>
+            <p class="hint">Download all your site data as a ZIP file. You can use this to back up or migrate to another instance.</p>
+            <div style="background: {{ site_settings.card_color }}; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <button type="button" id="export-btn" onclick="startExport()" style="background: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; display: inline-block;">📥 Start Export</button>
+                <p class="hint" style="margin-top: 10px;">Includes: events, upload metadata, layout order, text settings, and all media files. A data-only JSON export (no media, the format "Pull from URL" accepts) is at <a href="{{ url_for('export_json') }}">/admin/export/json</a>.</p>
+                <div id="export-progress" style="display: none; margin-top: 15px;">
+                    <div style="background: {{ site_settings.background_color }}; border-radius: 8px; overflow: hidden; height: 24px; margin-bottom: 8px;">
+                        <div id="export-progress-bar" class="progress-shimmer" style="height: 100%; background-color: {{ site_settings.primary_color }}; width: 0%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <p id="export-status" class="hint"></p>
+                </div>
+                <div id="export-result" style="display: none; margin-top: 15px; padding: 12px; border-radius: 8px; background: {{ site_settings.background_color }};"></div>
+            </div>
+
+            <div class="section-header">
+                <div class="section-icon">📥</div>
+                <h2>Import Data</h2>
+            </div>
+            <p class="hint">Import data from another instance. Upload a ZIP export file or pull from a URL. Choose what to import and whether to merge with existing data.</p>
+            <p class="hint" style="color: {{ site_settings.primary_color }};">Max import size: 100 GB</p>
+
+            <form method="POST" action="{{ url_for('import_data') }}" enctype="multipart/form-data" id="import-form" style="background: {{ site_settings.card_color }}; padding: 20px; border-radius: 10px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+                <!-- Source: File or URL -->
+                <div class="section-header" style="margin-top: 0;">
+                    <h3 style="font-size: 1em;">Source</h3>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 8px;">
+                        <input type="radio" name="mode" value="file" checked onchange="toggleImportSource()"> 📁 Upload ZIP file
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" name="mode" value="url" onchange="toggleImportSource()"> 🌐 Pull from URL
+                    </label>
+                </div>
+
+                <div id="import-file-section" style="margin-bottom: 15px;">
+                    <input type="file" name="source_file" accept=".zip,.json" style="padding: 10px; border-radius: 8px; border: 2px dashed {{ site_settings.primary_color }}; background: {{ site_settings.background_color }}; width: 100%;">
+                </div>
+                <div id="import-url-section" style="margin-bottom: 15px; display: none;">
+                    <input type="url" name="source_url" placeholder="https://othersite.com/admin/export" style="width: 100%; padding: 10px; border-radius: 8px; border: 2px solid {{ site_settings.secondary_color }}; background: {{ site_settings.background_color }}; color: {{ site_settings.text_color }};">
+                    <p class="hint">Enter the URL of the other site's export endpoint</p>
+                </div>
+
+                <!-- Strategy -->
+                <div class="section-header">
+                    <h3 style="font-size: 1em;">Merge Strategy</h3>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 8px;">
+                        <input type="radio" name="strategy" value="merge" checked> 🔀 Merge — keep existing data, add new items (skip duplicates)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" name="strategy" value="replace" onchange="confirmReplace()"> 🔄 Replace — clear existing data first
+                    </label>
+                </div>
+
+                <!-- What to import -->
+                <div class="section-header">
+                    <h3 style="font-size: 1em;">What to Import</h3>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 8px;">
+                        <input type="checkbox" name="import_events" checked> 📅 Events (titles, dates, notes, comments)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 8px;">
+                        <input type="checkbox" name="import_uploads" checked> 📸 Upload metadata (captions)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" name="import_settings"> ✏️ Text settings (titles, labels, messages)
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-submit" onclick="return startImport();">📥 Import Data</button>
+
+                <!-- Import Progress -->
+                <div id="import-progress" style="display: none; margin-top: 15px;">
+                    <div style="background: {{ site_settings.background_color }}; border-radius: 8px; overflow: hidden; height: 24px; margin-bottom: 8px;">
+                        <div id="import-progress-bar" class="progress-shimmer" style="height: 100%; background-color: {{ site_settings.primary_color }}; width: 0%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <p id="import-status" class="hint"></p>
+                </div>
+                <div id="import-result" style="display: none; margin-top: 15px; padding: 12px; border-radius: 8px; background: {{ site_settings.background_color }};"></div>
+            </form>
+        </div>
+
+        <!-- Media/Transcoding Tab -->
+        <div id="media-tab" class="tab-content">
+            <div class="section-header">
+                <div class="section-icon">🎬</div>
+                <h2>Media Transcoding</h2>
+            </div>
+            <p class="hint">Some video formats (like HEVC/H.265 from iPhone) won't play on all devices. Transcoding converts them to H.264/MP4 which works everywhere.</p>
+
+            <!-- Scan for incompatible media -->
+            <div style="background: {{ site_settings.card_color }}; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <div class="section-header" style="margin-top: 0;">
+                    <h3 style="font-size: 1em;">Scan & Transcode</h3>
+                </div>
+                <p class="hint" style="margin-bottom: 8px;">Scans all media files for incompatible formats and converts them. New uploads are transcoded automatically — use this only for legacy files or imported backups.</p>
+                <p class="hint" style="margin-bottom: 15px; font-size: 0.9em;">Videos are auto-transcoded to H.264 on upload. iPhone HEIC photos are auto-converted to JPEG on upload.</p>
+                <button type="button" id="transcode-btn" onclick="startTranscode()" style="background: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; display: inline-block;">🔄 Transcode All Incompatible Media</button>
+                <div id="transcode-progress" style="display: none; margin-top: 15px;">
+                    <div style="background: {{ site_settings.background_color }}; border-radius: 8px; overflow: hidden; height: 24px; margin-bottom: 8px;">
+                        <div id="transcode-progress-bar" class="progress-shimmer" style="height: 100%; background-color: {{ site_settings.primary_color }}; width: 0%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <p id="transcode-status" class="hint"></p>
+                    <div id="transcode-file-log" style="max-height: 250px; overflow-y: auto; margin-top: 10px; border-radius: 8px; background: {{ site_settings.background_color }}; padding: 8px;"></div>
+                </div>
+                <div id="transcode-result" style="display: none; margin-top: 15px; padding: 12px; border-radius: 8px; background: {{ site_settings.background_color }};"></div>
+            </div>
+
+            <!-- Keep Originals Toggle -->
+            <div style="background: {{ site_settings.card_color }}; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <div class="section-header" style="margin-top: 0;">
+                    <h3 style="font-size: 1em;">Storage Settings</h3>
+                </div>
+                <p class="hint" style="margin-bottom: 15px;">When transcoding, should the original files be kept?</p>
+
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; margin-bottom: 12px;">
+                    <input type="checkbox" id="keep-originals-toggle" {% if settings.get('transcode_keep_originals', True) %}checked{% endif %} onchange="toggleKeepOriginals(this)">
+                    <span>📦 Keep original files after transcoding</span>
+                </label>
+                <p class="hint" style="margin-top: 0; font-size: 0.9em;">
+                    Keeping originals uses more storage but preserves quality and allows you to retrieve original files later.
+                    Disabling this will delete originals after successful transcoding to save space.
+                </p>
+            </div>
+
+            <!-- Recurring events -->
+            <div style="background: {{ site_settings.card_color }}; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <div class="section-header" style="margin-top: 0;">
+                    <h3 style="font-size: 1em;">Recurring Events</h3>
+                </div>
+                <p class="hint" style="margin-bottom: 15px;">Yearly events get a new instance automatically (checked every 6 hours). Use this to create them right now.</p>
+                <form method="POST" action="{{ url_for('admin_process_repeating') }}" style="margin: 0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <button type="submit" style="background: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none;">🔁 Process Recurring Events Now</button>
+                </form>
+            </div>
+
+            <!-- Warning popup for disabling keep originals -->
+            <div id="keep-originals-warning" style="display: none; background: #ff6b6b20; border: 2px solid #ff6b6b; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h3 style="color: #ff6b6b; margin-top: 0;">⚠️ Warning: Original files will be deleted</h3>
+                <p style="margin-bottom: 15px;">Once you disable "Keep originals", transcoded videos will replace the original files permanently. This cannot be undone.</p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" onclick="confirmDisableKeepOriginals()" style="background: #ff6b6b; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;">Confirm: Disable Keeping Originals</button>
+                    <button type="button" onclick="cancelDisableKeepOriginals()" style="background: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Font Upload Section (outside main form to work properly) -->
+        <div id="font-management" class="font-upload-section" style="margin-top: 30px;">
+            <div class="section-header" style="margin-bottom: 15px;">
+                <div class="section-icon">📤</div>
+                <h2>Upload Custom Font</h2>
+            </div>
+            <p class="hint" style="margin-bottom: 15px;">Upload your own .ttf, .otf, .woff, or .woff2 font files!</p>
+            
+            <div style="background: {{ site_settings.card_color }}; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <form action="{{ url_for('upload_font') }}" method="post" enctype="multipart/form-data" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="file" name="font_file" accept=".ttf,.otf,.woff,.woff2" required style="flex: 1; min-width: 200px; padding: 10px; border-radius: 8px; border: 2px dashed {{ site_settings.primary_color }}; background: {{ site_settings.background_color }};">
+                    <button type="submit" style="background: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; padding: 12px 24px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">📤 Upload Font</button>
+                </form>
+            </div>
+            
+            {% if custom_fonts %}
+            <div class="section-header" style="margin: 20px 0 10px 0;">
+                <div class="section-icon">📁</div>
+                <h2>Your Custom Fonts</h2>
+            </div>
+            <div style="display: grid; gap: 10px;">
+                {% for font in custom_fonts %}
+                <div style="display: flex; justify-content: space-between; align-items: center; background: {{ site_settings.card_color }}; padding: 12px 18px; border-radius: 10px;">
+                    <div>
+                        <span style="font-family: '{{ font.name }}', cursive; font-size: 1.1em;">{{ font.name }}</span>
+                        <span style="opacity: 0.6; font-size: 0.85em; margin-left: 10px;">({{ font.filename }})</span>
+                    </div>
+                    <form action="{{ url_for('delete_font', filename=font.filename) }}" method="post" style="margin: 0;" onsubmit="return confirm('Delete this font?');">
+                        <button type="submit" style="background: #ff6b6b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold;">🗑️ Delete</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Font families mapping - cross-platform fonts that work everywhere
+        var fontFamilies = {
+            'comic-sans': "'Comic Sans MS', 'Comic Sans', cursive",
+            'arial': "Arial, Helvetica, sans-serif",
+            'georgia': "Georgia, 'Times New Roman', serif",
+            'times': "'Times New Roman', Times, serif",
+            'verdana': "Verdana, Geneva, sans-serif",
+            'trebuchet': "'Trebuchet MS', Helvetica, sans-serif",
+            'courier': "'Courier New', Courier, monospace",
+            'impact': "Impact, Haettenschweiler, sans-serif",
+            'palatino': "'Palatino Linotype', 'Book Antiqua', Palatino, serif",
+            'tahoma': "Tahoma, Geneva, sans-serif",
+            'system': "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            'handcaps': "'Handcaps', 'Comic Sans MS', cursive"
+        };
+        
+        // Add custom fonts from server
+        {% for font in custom_fonts %}
+        fontFamilies['{{ font.name|lower }}'] = "'{{ font.name }}', 'Comic Sans MS', cursive";
+        {% endfor %}
+        
+        // Tab switching function
+        function switchTab(tabName) {
+            var tabs = document.querySelectorAll('.tab');
+            var contents = document.querySelectorAll('.tab-content');
+            
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove('active');
+                if (tabs[i].dataset.tab === tabName) {
+                    tabs[i].classList.add('active');
+                }
+            }
+            for (var i = 0; i < contents.length; i++) {
+                contents[i].classList.remove('active');
+            }
+            
+            var targetTab = document.getElementById(tabName + '-tab');
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+            
+            // Update hidden field so form remembers active tab
+            var activeTabInput = document.getElementById('active_tab');
+            if (activeTabInput) {
+                activeTabInput.value = tabName;
+            }
+            
+            // Show/hide font management section
+            var fontMgmt = document.getElementById('font-management');
+            if (fontMgmt) {
+                fontMgmt.style.display = (tabName === 'fonts') ? 'block' : 'none';
+            }
+            
+            // Show/hide settings submit button (hide on import/export and media tabs)
+            var settingsSubmit = document.getElementById('settings-submit');
+            if (settingsSubmit) {
+                settingsSubmit.style.display = (tabName === 'import_export' || tabName === 'media') ? 'none' : 'block';
+            }
+        }
+
+        // Theme selection function
+        function selectTheme(theme, el) {
+            document.getElementById('theme').value = theme;
+            var cards = document.querySelectorAll('.theme-card');
+            for (var i = 0; i < cards.length; i++) {
+                cards[i].classList.remove('selected');
+            }
+            el.classList.add('selected');
+        }
+
+        // Mark as custom theme when colors are changed
+        function markCustom() {
+            document.getElementById('theme').value = 'custom';
+            var cards = document.querySelectorAll('.theme-card');
+            for (var i = 0; i < cards.length; i++) {
+                cards[i].classList.remove('selected');
+            }
+        }
+        
+        // Save current colors as a preset
+        function saveColorPreset() {
+            var presetName = document.getElementById('preset_name').value.trim();
+            if (!presetName) {
+                alert('Please enter a name for your preset');
+                return;
+            }
+            
+            var colors = {
+                name: presetName,
+                background_color: document.querySelector('input[name="background_color"]').value,
+                primary_color: document.querySelector('input[name="primary_color"]').value,
+                secondary_color: document.querySelector('input[name="secondary_color"]').value,
+                text_color: document.querySelector('input[name="text_color"]').value,
+                card_color: document.querySelector('input[name="card_color"]').value
+            };
+            
+            fetch('/admin/save_preset', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+                },
+                body: JSON.stringify(colors)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Server returned ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Error saving preset');
+                }
+            })
+            .catch(err => {
+                alert('Error saving preset');
+                console.error(err);
+            });
+        }
+        
+        // Load a preset's colors into the form
+        function loadPreset(presetName) {
+            fetch('/admin/get_preset/' + encodeURIComponent(presetName))
+            .then(response => {
+                if (!response.ok) throw new Error('Server returned ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    document.querySelector('input[name="background_color"]').value = data.preset.background_color;
+                    document.querySelector('input[name="primary_color"]').value = data.preset.primary_color;
+                    document.querySelector('input[name="secondary_color"]').value = data.preset.secondary_color;
+                    document.querySelector('input[name="text_color"]').value = data.preset.text_color;
+                    document.querySelector('input[name="card_color"]').value = data.preset.card_color;
+                    markCustom();
+                    alert('Preset "' + presetName + '" loaded! Click Save to apply.');
+                } else {
+                    alert(data.error || 'Error loading preset');
+                }
+            })
+            .catch(err => {
+                alert('Error loading preset');
+                console.error(err);
+            });
+        }
+        
+        // Delete a preset
+        function deletePreset(presetName) {
+            if (!confirm('Delete preset "' + presetName + '"?')) return;
+            
+            fetch('/admin/delete_preset/' + encodeURIComponent(presetName), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Server returned ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Error deleting preset');
+                }
+            })
+            .catch(err => {
+                alert('Error deleting preset');
+                console.error(err);
+            });
+        }
+        
+        // Update Full Page Preview - applies selected font to the preview section
+        function updateFontPreview(fontType) {
+            var selectElement = document.getElementById(fontType + '_font');
+            if (!selectElement) {
+                console.log('Select element not found for: ' + fontType);
+                return;
+            }
+            
+            var selectedFont = selectElement.value;
+            var fontFamily = fontFamilies[selectedFont];
+            
+            if (!fontFamily) {
+                fontFamily = fontFamilies['comic-sans'];
+            }
+            
+            console.log('Updating ' + fontType + ' to: ' + fontFamily);
+            
+            // Update the full page preview section
+            var fullPreviewSection;
+            if (fontType === 'body') {
+                fullPreviewSection = document.getElementById('full-preview-body');
+            } else {
+                fullPreviewSection = document.getElementById('full-preview-buttons');
+            }
+            
+            if (fullPreviewSection) {
+                // Use setProperty with !important to override CSS
+                fullPreviewSection.style.setProperty('font-family', fontFamily, 'important');
+                var children = fullPreviewSection.getElementsByTagName('*');
+                for (var i = 0; i < children.length; i++) {
+                    children[i].style.setProperty('font-family', fontFamily, 'important');
+                }
+            }
+        }
+        
+        // Initialize everything when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            var bodyFontSelect = document.getElementById('body_font');
+            var buttonFontSelect = document.getElementById('button_font');
+            
+            // Restore active tab from hidden field or URL parameter
+            var activeTabInput = document.getElementById('active_tab');
+            var savedTab = activeTabInput ? activeTabInput.value : 'appearance';
+            
+            // Also check URL parameter
+            var urlParams = new URLSearchParams(window.location.search);
+            var urlTab = urlParams.get('tab');
+            if (urlTab) {
+                savedTab = urlTab;
+            }
+            
+            // Switch to the saved tab
+            if (savedTab && savedTab !== 'appearance') {
+                switchTab(savedTab);
+            }
+            
+            // Update previews on page load
+            updateFontPreview('body');
+            updateFontPreview('button');
+            
+            // Add change event listeners
+            if (bodyFontSelect) {
+                bodyFontSelect.addEventListener('change', function() {
+                    updateFontPreview('body');
+                });
+            }
+            
+            if (buttonFontSelect) {
+                buttonFontSelect.addEventListener('change', function() {
+                    updateFontPreview('button');
+                });
+            }
+            
+            // Hide font management by default (only show on fonts tab)
+            var fontMgmt = document.getElementById('font-management');
+            if (fontMgmt) {
+                fontMgmt.style.display = (savedTab === 'fonts') ? 'block' : 'none';
+            }
+        });
+        
+        // Backup: also run on window load
+        window.addEventListener('load', function() {
+            updateFontPreview('body');
+            updateFontPreview('button');
+        });
+
+        // ============================================
+        // Import/Export helpers
+        // ============================================
+
+        function toggleImportSource() {
+            var mode = document.querySelector('input[name="mode"]:checked').value;
+            document.getElementById('import-file-section').style.display = (mode === 'file') ? 'block' : 'none';
+            document.getElementById('import-url-section').style.display = (mode === 'url') ? 'block' : 'none';
+        }
+
+        function confirmReplace() {
+            return confirm('⚠️ Replace will DELETE all existing data before importing.\n\nAre you sure? This cannot be undone without a backup.');
+        }
+
+        function confirmImport() {
+            var strategy = document.querySelector('input[name="strategy"]:checked').value;
+            if (strategy === 'replace') {
+                return confirm('Final check — you are about to REPLACE all data.\n\nEvents, uploads metadata, and layout will be cleared.\n\nClick OK to proceed.');
+            }
+            return true;
+        }
+
+        // ============================================
+        // Import progress tracking
+        // ============================================
+
+        function startImport() {
+            if (!confirmImport()) {
+                return false;
+            }
+
+            var btn = event.target;
+            var form = document.getElementById('import-form');
+            var progress = document.getElementById('import-progress');
+            var progressBar = document.getElementById('import-progress-bar');
+            var status = document.getElementById('import-status');
+            var result = document.getElementById('import-result');
+
+            btn.disabled = true;
+            btn.style.opacity = '0.6';
+            progress.style.display = 'block';
+            result.style.display = 'none';
+            status.textContent = 'Starting import...';
+            progressBar.style.width = '0%';
+
+            var formData = new FormData(form);
+
+            fetch('/admin/import/start', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+                },
+                body: formData
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                    if (response.status === 413) {
+                        throw new Error('File is too large. Please reduce the size of your export and try again.');
+                    }
+                    return response.text().then(function(text) {
+                        // Truncate and strip HTML tags for clean error display
+                        var msg = text.replace(/<[^>]*>/g, '').substring(0, 100);
+                        throw new Error('Server returned ' + response.status + (msg ? ': ' + msg : ''));
+                    });
+                }
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.error) {
+                    status.textContent = 'Error: ' + data.error;
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    return;
+                }
+                pollImportProgress(data.job_id, btn, progressBar, status, result);
+            })
+            .catch(function(err) {
+                status.textContent = 'Error starting import: ' + err.message;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            });
+
+            return false; // Prevent default form submit
+        }
+
+        // ============================================
+        // Progress bar helpers
+        // ============================================
+
+        function stopProgressShimmer(progressBar) {
+            if (progressBar) {
+                progressBar.classList.remove('progress-shimmer');
+            }
+        }
+
+        // ============================================
+        // Import progress tracking
+        // ============================================
+
+        function pollImportProgress(jobId, btn, progressBar, status, result) {
+            var connectErrors = 0;
+            var maxConnectErrors = 30; // ~15s at 500ms interval
+            var pollInterval = setInterval(function() {
+                fetch('/admin/import/progress/' + jobId)
+                .then(function(response) {
+                    if (response.status === 404) {
+                        clearInterval(pollInterval);
+                        stopProgressShimmer(progressBar);
+                        status.textContent = '\u274c Server restarted - job state lost';
+                        status.style.color = '#dc3545';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        return;
+                    }
+                    if (!response.ok) {
+                        return response.text().then(function(text) { throw new Error('Server returned ' + response.status); });
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    connectErrors = 0; // Reset on success
+                    if (data.error) {
+                        clearInterval(pollInterval);
+                        stopProgressShimmer(progressBar);
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        status.textContent = '❌ ' + data.error;
+                        status.style.color = '#dc3545';
+                        return;
+                    }
+
+                    progressBar.style.width = (data.progress || 0) + '%';
+                    status.textContent = data.status || 'Processing...';
+                    status.style.color = '';
+
+                    if (data.done) {
+                        clearInterval(pollInterval);
+                        stopProgressShimmer(progressBar);
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        result.style.display = 'block';
+                        result.textContent = '✓ ' + data.status;
+                        result.style.background = 'rgba(40, 167, 69, 0.2)';
+                    }
+                })
+                .catch(function(err) {
+                    connectErrors++;
+                    if (connectErrors >= maxConnectErrors) {
+                        clearInterval(pollInterval);
+                        stopProgressShimmer(progressBar);
+                        status.textContent = '❌ Connection lost — process may have crashed';
+                        status.style.color = '#dc3545';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        return;
+                    }
+                    status.textContent = '⚠️ Connection lost — reconnecting... (' + (maxConnectErrors - connectErrors) + 's)';
+                    status.style.color = '#e67e22';
+                });
+            }, 500);
+        }
+
+        // ============================================
+        // Media/Transcoding helpers
+        // ============================================
+
+        var keepOriginalsPending = false;
+
+        function toggleKeepOriginals(checkbox) {
+            if (!checkbox.checked) {
+                // User tried to disable - show warning, don't apply yet
+                keepOriginalsPending = true;
+                document.getElementById('keep-originals-warning').style.display = 'block';
+                checkbox.checked = true; // Re-enable until confirmed
+            } else {
+                document.getElementById('keep-originals-warning').style.display = 'none';
+            }
+        }
+
+        function confirmDisableKeepOriginals() {
+            var checkbox = document.getElementById('keep-originals-toggle');
+            checkbox.checked = false;
+            keepOriginalsPending = false;
+            document.getElementById('keep-originals-warning').style.display = 'none';
+            // Save setting to server
+            fetch('/admin/settings/transcode_keep_originals', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+                },
+                body: JSON.stringify({ keep_originals: false })
+            }).catch(function(err) { console.error('Error saving setting:', err); });
+        }
+
+        function cancelDisableKeepOriginals() {
+            var checkbox = document.getElementById('keep-originals-toggle');
+            checkbox.checked = true;
+            keepOriginalsPending = false;
+            document.getElementById('keep-originals-warning').style.display = 'none';
+        }
+
+        function startTranscode() {
+            var btn = document.getElementById('transcode-btn');
+            var progress = document.getElementById('transcode-progress');
+            var progressBar = document.getElementById('transcode-progress-bar');
+            var status = document.getElementById('transcode-status');
+            var result = document.getElementById('transcode-result');
+
+            btn.disabled = true;
+            btn.style.opacity = '0.6';
+            progress.style.display = 'block';
+            result.style.display = 'none';
+            status.textContent = 'Scanning for incompatible media...';
+            progressBar.style.width = '0%';
+
+            // Get keep_originals setting
+            var keepOriginals = document.getElementById('keep-originals-toggle').checked;
+
+            fetch('/admin/transcode/scan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+                },
+                body: JSON.stringify({ keep_originals: keepOriginals })
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                    return response.text().then(function(text) { throw new Error('Server returned ' + response.status + ': ' + text.substring(0, 100)); });
+                }
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.error) {
+                    status.textContent = 'Error: ' + data.error;
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    return;
+                }
+
+                if (data.total === 0 && !data.job_id) {
+                    status.textContent = 'All media is compatible. Nothing to transcode.';
+                    progressBar.style.width = '100%';
+                    result.style.display = 'block';
+                    result.textContent = '✓ All media files are already in compatible formats.';
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    return;
+                }
+
+                // Start polling for progress
+                pollTranscodeProgress(data.job_id, btn, progressBar, status, result);
+            })
+            .catch(function(err) {
+                status.textContent = 'Error starting transcode: ' + err.message;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            });
+        }
+
+        function pollTranscodeProgress(jobId, btn, progressBar, status, result) {
+            var connectErrors = 0;
+            var maxConnectErrors = 30; // ~60s at 2000ms interval
+            var pollInterval = setInterval(function() {
+                fetch('/admin/transcode/progress/' + jobId)
+                .then(function(response) {
+                    if (response.status === 404) {
+                        clearInterval(pollInterval);
+                        stopProgressShimmer(progressBar);
+                        status.textContent = '\u274c Server restarted - job state lost';
+                        status.style.color = '#dc3545';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        return;
+                    }
+                    if (!response.ok) {
+                        return response.text().then(function(text) { throw new Error('Server returned ' + response.status); });
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    connectErrors = 0; // Reset on success
+                    if (data.error) {
+                        clearInterval(pollInterval);
+                        stopProgressShimmer(progressBar);
+                        status.textContent = '❌ ' + data.error;
+                        status.style.color = '#dc3545';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        return;
+                    }
+
+                    progressBar.style.width = (data.progress || 0) + '%';
+                    status.textContent = data.status || 'Processing...';
+                    status.style.color = '';
+
+                    // Update file log
+                    updateTranscodeFileLog(data.file_log || []);
+
+                    if (data.done) {
+                        clearInterval(pollInterval);
+                        stopProgressShimmer(progressBar);
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        result.style.display = 'block';
+                        result.textContent = '✓ Transcode complete. ' + (data.transcoded || 0) + ' file(s) transcoded, ' + (data.failed || 0) + ' failed.';
+                        if (data.failed > 0) {
+                            result.style.background = 'rgba(243, 156, 18, 0.2)';
+                        } else {
+                            result.style.background = 'rgba(40, 167, 69, 0.2)';
+                        }
+                    }
+                })
+                .catch(function(err) {
+                    connectErrors++;
+                    if (connectErrors >= maxConnectErrors) {
+                        clearInterval(pollInterval);
+                        stopProgressShimmer(progressBar);
+                        status.textContent = '❌ Connection lost — process may have crashed';
+                        status.style.color = '#dc3545';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        return;
+                    }
+                    status.textContent = '⚠️ Connection lost — reconnecting... (' + (maxConnectErrors - connectErrors) + 's)';
+                    status.style.color = '#e67e22';
+                });
+            }, 2000);
+        }
+
+        // ============================================
+        // Export progress tracking
+        // ============================================
+
+        function startExport() {
+            var btn = document.getElementById('export-btn');
+            var progress = document.getElementById('export-progress');
+            var progressBar = document.getElementById('export-progress-bar');
+            var status = document.getElementById('export-status');
+            var result = document.getElementById('export-result');
+
+            btn.disabled = true;
+            btn.style.opacity = '0.6';
+            btn.textContent = '⏳ Exporting...';
+            progress.style.display = 'block';
+            result.style.display = 'none';
+            status.textContent = 'Starting export...';
+            progressBar.style.width = '0%';
+
+            fetch('/admin/export/start', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+                }
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                    return response.text().then(function(text) { throw new Error('Server returned ' + response.status + ': ' + text.substring(0, 100)); });
+                }
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.error) {
+                    status.textContent = 'Error: ' + data.error;
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.textContent = '📥 Start Export';
+                    return;
+                }
+                pollExportProgress(data.job_id, btn, progressBar, status, result);
+            })
+            .catch(function(err) {
+                status.textContent = 'Error starting export: ' + err.message;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.textContent = '📥 Start Export';
+            });
+        }
+
+        function pollExportProgress(jobId, btn, progressBar, status, result) {
+            var connectErrors = 0;
+            var maxConnectErrors = 30; // ~15s at 500ms interval
+            var pollInterval = setInterval(function() {
+                fetch('/admin/export/progress/' + jobId)
+                .then(function(response) {
+                    if (response.status === 404) {
+                        clearInterval(pollInterval);
+                        stopProgressShimmer(progressBar);
+                        status.textContent = '\u274c Server restarted - job state lost';
+                        status.style.color = '#dc3545';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        return;
+                    }
+                    if (!response.ok) {
+                        return response.text().then(function(text) { throw new Error('Server returned ' + response.status); });
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    connectErrors = 0; // Reset on success
+                    if (data.error) {
+                        clearInterval(pollInterval);
+                        stopProgressShimmer(progressBar);
+                        status.textContent = '❌ Error: ' + data.error;
+                        status.style.color = '#dc3545';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        btn.textContent = '📥 Start Export';
+                        return;
+                    }
+
+                    progressBar.style.width = (data.progress || 0) + '%';
+                    var fileMsg = data.current_file ? ' — ' + data.current_file : '';
+                    var fileCount = data.total_files > 0 ? ' (' + data.processed_files + '/' + data.total_files + ')' : '';
+                    status.textContent = 'Exporting' + fileCount + fileMsg;
+
+                    if (data.done && data.status === 'done') {
+                        clearInterval(pollInterval);
+                        stopProgressShimmer(progressBar);
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        btn.textContent = '📥 Start Export';
+                        result.style.display = 'block';
+                        result.textContent = '✓ Export complete! ';
+                        result.innerHTML += '<a href="/admin/export/download/' + jobId + '" style="color: #28a745; font-weight: bold; text-decoration: underline;">Download ZIP</a>';
+                        result.style.background = 'rgba(40, 167, 69, 0.2)';
+                    }
+                })
+                .catch(function(err) {
+                    connectErrors++;
+                    if (connectErrors >= maxConnectErrors) {
+                        clearInterval(pollInterval);
+                        stopProgressShimmer(progressBar);
+                        status.textContent = '❌ Connection lost — process may have crashed';
+                        status.style.color = '#dc3545';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        btn.textContent = '📥 Start Export';
+                        return;
+                    }
+                    status.textContent = '⚠️ Connection lost — reconnecting... (' + (maxConnectErrors - connectErrors) + 's)';
+                    status.style.color = '#e67e22';
+                });
+            }, 500);
+        }
+
+        function updateTranscodeFileLog(fileLog) {
+            var logEl = document.getElementById('transcode-file-log');
+            if (!logEl) return;
+
+            // Build a map of current state
+            var html = '';
+            for (var i = 0; i < fileLog.length; i++) {
+                var entry = fileLog[i];
+                var icon = '';
+                var color = '#999';
+                if (entry.status === 'done') {
+                    icon = '✅';
+                    color = '#28a745';
+                } else if (entry.status === 'processing') {
+                    icon = '🔄';
+                    color = '#007bff';
+                } else if (entry.status === 'failed') {
+                    icon = '❌';
+                    color = '#dc3545';
+                } else {
+                    icon = '⏳';
+                    color = '#999';
+                }
+                html += '<div style="padding: 4px 8px; font-size: 0.85em; display: flex; align-items: center; gap: 6px; color: ' + color + ';">' +
+                    '<span>' + icon + '</span>' +
+                    '<span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + entry.file + '</span>' +
+                    (entry.message ? '<span style="font-size: 0.8em; opacity: 0.7;">' + entry.message + '</span>' : '') +
+                    '</div>';
+            }
+            logEl.innerHTML = html;
+
+            // Auto-scroll to bottom
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+    </script>
+    </div> <!-- end .main-content -->
+    
+    {% include 'footer.html' %}
+</body>
+</html>

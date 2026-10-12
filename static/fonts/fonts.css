@@ -1,0 +1,47 @@
+/* ============================================
+   OFFLINE FONT COLLECTION
+   Cute & Playful Fonts for Personal Site
+   ============================================ */
+
+/* handcaps font */
+@font-face {
+  font-family: 'handcaps';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: local('handcaps'),
+       url('/static/fonts/handcaps.otf') format('opentype');
+}
+
+/* Milkyway_DEMO font */
+@font-face {
+  font-family: 'Milkyway_DEMO';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: local('Milkyway_DEMO'),
+       url('/static/fonts/Milkyway_DEMO.ttf') format('truetype');
+}
+
+/* OutlineBubble-Regular font */
+@font-face {
+  font-family: 'OutlineBubble-Regular';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: local('OutlineBubble-Regular'),
+       url('/static/fonts/OutlineBubble-Regular.ttf') format('truetype');
+}
+
+/* 
+   FONT STACKS (system fonts work offline):
+   
+   comic-sans:         'Comic Sans MS', 'Chalkboard SE', cursive
+   chalkboard:         'Chalkboard SE', 'Comic Sans MS', cursive
+   bradley-hand:       'Bradley Hand', 'Brush Script MT', cursive
+   marker-felt:        'Marker Felt', 'Comic Sans MS', cursive
+   papyrus:            'Papyrus', fantasy
+   brush-script:       'Brush Script MT', cursive
+   lucida-handwriting: 'Lucida Handwriting', 'Lucida Calligraphy', cursive
+   system:             -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif
+*/

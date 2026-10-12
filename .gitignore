@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+*.so
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+nohup.out
+*.lock
+
+# Root-level only (use defaults/ for Docker seeds)
+/.flask_secret_key
+/users.json
+/settings.json
+/posts.json
+/events.json
+/upload_metadata.json
+/layout.json
+
+# Media directories (user-generated content)
+/static/uploads/
+/static/event_photos/
+/static/event_videos/
+/static/thumbnails/
+/static/ios_cache/
+
+# Self-signed TLS material (never commit private keys)
+/certs/

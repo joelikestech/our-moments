@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ ('Edit ' ~ event.title) if event else 'Event not found' }}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="preload" href="/static/fonts/handcaps.otf" as="font" type="font/otf" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ static_url('fonts/fonts.css') }}">
+    <link rel="stylesheet" href="{{ static_url('css/base.css') }}">
+    <style>
+        /* Inline font-face for maximum mobile compatibility */
+        @font-face {
+            font-family: 'Handcaps';
+            font-style: normal;
+            font-weight: 100 900;
+            font-display: swap;
+            src: url('/static/fonts/handcaps.otf') format('opentype');
+        }
+        
+        /* Prevent mobile font scaling issues */
+        html {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        
+        /* Body font for ALL text elements */
+        *, *::before, *::after {
+            font-family: {{ site_settings.get('body_font', 'handcaps') | get_font_family | safe }} !important;
+        }
+        
+        /* Button font for all clickable elements */
+        a, a *, button, button *, input[type="submit"], 
+        .nav-btn, .nav-btn *, .btn, .btn *, .user-dropdown, .user-dropdown *,
+        .dropdown-menu a, .dropdown-menu a * {
+            font-family: {{ site_settings.get('button_font', 'comic-sans') | get_font_family | safe }} !important;
+        }
+        
+        body {
+            background-color: {{ site_settings.background_color }};
+            color: {{ site_settings.text_color }};
+            font-size: 1.2em;
+            padding: 20px;
+            padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+            min-height: 100vh;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .main-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .nav-btn { background-color: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; }
+        .nav-btn:hover { background-color: {{ site_settings.secondary_color }}; }
+        .user-dropdown { background-color: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        @media (hover: hover) and (pointer: fine) { .user-dropdown:hover { background-color: {{ site_settings.secondary_color }}; } }
+        .user-dropdown.active { background-color: {{ site_settings.secondary_color }}; }
+        .dropdown-menu { display: none; background-color: {{ site_settings.get('card_color', '#ffffff') }}; }
+        .dropdown-menu.show { display: block; }
+        .dropdown-menu a { color: {{ site_settings.text_color }}; }
+        .dropdown-menu a:hover { background-color: {{ site_settings.secondary_color }}; }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: {{ site_settings.primary_color }};
+        }
+        .form-wrapper {
+            max-width: 700px;
+            margin: auto;
+            background-color: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 12px;
+        }
+        input, textarea, button {
+            width: 100%;
+            max-width: 600px;
+            margin: 10px auto;
+            display: block;
+            box-sizing: border-box;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 1em;
+        }
+        label {
+            font-weight: bold;
+            margin-top: 20px;
+            display: block;
+            text-align: center;
+        }
+        img, video {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .checkbox-label {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .delete-button {
+            background-color: #ffb7b7;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 20px auto 0;
+            font-size: 1em;
+            font-weight: bold;
+            display: block;
+            width: fit-content;
+        }
+        .delete-button:hover {
+            background-color: #ff9999;
+        }
+        #confirmModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        #confirmModal .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 300px;
+            text-align: center;
+            font-size: 1em;
+            color: #333;
+            margin: auto;
+        }
+        #confirmModal button {
+            margin: 10px 5px 0;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            border: none;
+        }
+        .confirm-yes {
+            background-color: #ffb7b7;
+            color: white;
+        }
+        .confirm-no {
+            background-color: #ccc;
+            color: #333;
+        }
+        .drop-zone {
+            border: 2px dashed {{ site_settings.secondary_color }}; border-radius: 8px;
+            padding: 20px; text-align: center; margin: 10px auto 15px; max-width: 600px;
+            cursor: pointer; transition: background 0.2s, border-color 0.2s;
+            min-height: 60px; display: flex; align-items: center; justify-content: center;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            background: {{ site_settings.secondary_color }}20; border-color: {{ site_settings.primary_color }};
+        }
+        .drop-zone-text { color: {{ site_settings.text_color }}80; font-size: 14px; }
+        .file-previews { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; justify-content: center; }
+        .file-preview {
+            position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden;
+            border: 2px solid {{ site_settings.secondary_color }};
+        }
+        .file-preview img, .file-preview video { width: 100%; height: 100%; object-fit: cover; }
+        .file-preview .remove-file {
+            position: absolute; top: 2px; right: 2px; width: 20px; height: 20px;
+            background: red; color: white; border: none; border-radius: 50%;
+            font-size: 12px; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; line-height: 1;
+        }
+        
+        /* Desktop: main card dead center of viewport, sidebar floats right */
+        @media (min-width: 1500px) {
+          .edit-layout {
+            position: relative;
+            max-width: 700px;
+            margin: 0 auto;
+          }
+          
+          .form-wrapper {
+            width: 100%;
+            max-width: 700px;
+            background-color: {{ site_settings.get('card_color', '#ffffff') }};
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          }
+          
+          .edit-sidebar {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 240px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            background-color: {{ site_settings.get('card_color', '#ffffff') }};
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 100;
+          }
+          
+          .edit-sidebar button,
+          .edit-sidebar a {
+            width: 100%;
+            text-align: center;
+          }
+        }
+        
+        /* Mobile: single column */
+        @media (max-width: 1299px) {
+          .edit-layout {
+            max-width: 700px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+          }
+          
+          .form-wrapper {
+            width: 100%;
+            background-color: {{ site_settings.get('card_color', '#ffffff') }};
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          }
+          
+          .edit-sidebar {
+            width: 100%;
+            margin-top: 15px;
+            background: transparent;
+            padding: 0;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+          }
+        }
+    </style>
+</head>
+<body>
+    {% include 'header.html' %}
+    <div class="main-content">
+    <h1>{{ 'Edit Event' if can_edit_details else 'Add to Event' }}</h1>
+    {% include '_flash.html' %}
+    <div class="edit-layout">
+    <div class="form-wrapper">
+        {% if event %}
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            {% if can_edit_details %}
+            <label>Title:</label>
+            <input type="text" name="title" value="{{ event.title }}" required>
+
+            <label>Start Date & Time:</label>
+            <input type="datetime-local" name="start" value="{{ event.start }}" required>
+
+            <label>End Date & Time:</label>
+            <input type="datetime-local" name="end" value="{{ event.end }}">
+
+            <label>Notes:</label>
+            <textarea name="notes">{{ event.notes }}</textarea>
+
+            <label class="checkbox-label">
+                <input type="checkbox" name="repeat_yearly" {% if event.repeat_yearly %}checked{% endif %}>
+                Repeat Yearly
+            </label>
+            {% else %}
+            <p style="margin-bottom: 20px;">You can add photos/videos to this event, but only the event creator can edit the title, date, and notes.</p>
+            {% endif %}
+
+            <label>Add More Media:</label>
+            <div class="drop-zone" id="dropZone">
+                <span class="drop-zone-text">Drop photos/videos here or click to browse</span>
+                <input type="file" id="media" name="media" accept="image/*,video/*" multiple style="display:none">
+            </div>
+            <div class="file-previews" id="filePreviews"></div>
+
+            {% if event.photos %}
+                <label>Current Photos:</label>
+                {% for photo in event.photos %}
+                    {% set photo_filename = photo.filename if photo is mapping else photo %}
+                    <div style="padding: 15px; margin-bottom: 15px; border: 2px solid {{ site_settings.secondary_color }}; border-radius: 8px; background: {{ site_settings.get('card_color', '#ffffff') }};">
+                        <img src="/thumb/md/event_photos/{{ photo_filename }}" loading="lazy" decoding="async" alt="Event photo" style="display: block; margin-bottom: 10px;">
+                        {% if photo is mapping and photo.get('uploaded_by') %}
+                        <div style="font-size: 0.9em; color: {{ site_settings.secondary_color }}; margin-bottom: 8px;">
+                            <strong>Uploaded by:</strong> @{{ photo['uploaded_by'] }}
+                        </div>
+                        {% endif %}
+                        <div style="padding-top: 10px; margin-top: 10px;">
+                        {% if photo_permissions.get(photo_filename) %}
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="delete_photos" value="{{ photo_filename }}" style="width: auto; margin: 0;">
+                            <span style="color: {{ site_settings.secondary_color }}; font-weight: bold;">🗑️ Delete this photo</span>
+                        </label>
+                        {% else %}
+                        <span style="font-size: 0.85em; color: #999; font-style: italic;">Only the uploader can delete this photo</span>
+                        {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% if event.videos %}
+                <label>Current Videos:</label>
+                {% for video in event.videos %}
+                    {% set video_filename = video.filename if video is mapping else video %}
+                    <div style="padding: 15px; margin-bottom: 15px; border: 2px solid {{ site_settings.secondary_color }}; border-radius: 8px; background: {{ site_settings.get('card_color', '#ffffff') }};">
+                        <video controls playsinline webkit-playsinline preload="none" poster="/thumb/md/event_videos/{{ video_filename }}" style="display: block; margin-bottom: 10px;">
+                            <source src="/video/event_videos/{{ video_filename }}" type="video/mp4">
+                            <source src="/video/event_videos/{{ video_filename }}" type="video/quicktime">
+                        </video>
+                        {% if video is mapping and video.get('uploaded_by') %}
+                        <div style="font-size: 0.9em; color: {{ site_settings.secondary_color }}; margin-bottom: 8px;">
+                            <strong>Uploaded by:</strong> @{{ video['uploaded_by'] }}
+                        </div>
+                        {% endif %}
+                        <div style="padding-top: 10px; margin-top: 10px;">
+                        {% if video_permissions.get(video_filename) %}
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="delete_videos" value="{{ video_filename }}" style="width: auto; margin: 0;">
+                            <span style="color: {{ site_settings.secondary_color }}; font-weight: bold;">🗑️ Delete this video</span>
+                        </label>
+                        {% else %}
+                        <span style="font-size: 0.85em; color: #999; font-style: italic;">Only the uploader can delete this video</span>
+                        {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <button type="submit" id="saveBtn" style="display: none;">{{ 'Save Changes' if can_edit_details else 'Add Media' }}</button>
+        </form>
+        </div>
+        
+        <div class="edit-sidebar">
+          <button type="button" id="saveBtnSidebar" onclick="document.getElementById('saveBtn').click()">{{ 'Save Changes' if can_edit_details else 'Add Media' }}</button>
+          <a href="/events" style="display: block; text-align: center; padding: 10px; background: {{ site_settings.secondary_color }}; color: {{ site_settings.text_color }}; border-radius: 6px; text-decoration: none; font-weight: bold;">Cancel</a>
+          {% if can_edit_details %}
+          <button type="button" class="delete-button" onclick="document.getElementById('confirmModal').style.display='flex'">🗑️ Delete Event</button>
+          <div id="confirmModal">
+              <div class="modal-content">
+                  <p>Are you sure you want to delete this event?</p>
+                  <form action="/delete_event" method="POST">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                      <input type="hidden" name="id" value="{{ event.id }}">
+                      <button type="submit" class="confirm-yes">Yes, Delete</button>
+                      <button type="button" class="confirm-no" onclick="document.getElementById('confirmModal').style.display='none'">Cancel</button>
+                  </form>
+              </div>
+          </div>
+          {% endif %}
+        </div>
+
+        {% if event.get('comments') %}
+            <label>Comments:</label>
+            {% for comment in event.comments %}
+                {% set comment_id = loop.index0 %}
+                <div style="padding: 15px; margin-bottom: 15px; border: 2px solid {{ site_settings.secondary_color }}; border-radius: 8px; background: {{ site_settings.get('card_color', '#ffffff') }};">
+                    <div style="font-size: 0.9em; color: {{ site_settings.secondary_color }}; margin-bottom: 8px;">
+                        <strong>@{{ comment.username }}</strong>
+                        {% if comment.get('timestamp') %}
+                        <span style="color: #888; font-size: 0.9em; margin-left: 8px;">{{ comment.timestamp[:10] }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div id="comment-display-{{ comment_id }}" style="color: {{ site_settings.text_color }}; white-space: pre-wrap; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; margin-bottom: 10px;">
+                        {{ comment.text }}
+                    </div>
+                    
+                    {% if comment_permissions.get(comment_id) %}
+                    <div id="comment-edit-{{ comment_id }}" style="display: none; margin-bottom: 10px;">
+                        <textarea id="comment-text-{{ comment_id }}" style="width: 100%; box-sizing: border-box; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-family: Arial, sans-serif; min-height: 60px; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; white-space: pre-wrap;">{{ comment.text }}</textarea>
+                    </div>
+                    {% endif %}
+                    
+                    <div style="padding-top: 10px; margin-top: 10px; display: flex; gap: 10px;">
+                        {% if comment_permissions.get(comment_id) == 'edit' %}
+                        <button type="button" onclick="toggleCommentEdit({{ comment_id }})" id="edit-btn-{{ comment_id }}" style="background: {{ site_settings.secondary_color }}; color: {{ site_settings.text_color }}; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold;">✏️ Edit</button>
+                        <button type="button" onclick="saveCommentEdit({{ comment_id }}, '{{ event.id }}')" id="save-btn-{{ comment_id }}" style="display: none; background: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold;">💾 Save</button>
+                        <button type="button" onclick="cancelCommentEdit({{ comment_id }})" id="cancel-btn-{{ comment_id }}" style="display: none; background: #ccc; color: #333; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold;">Cancel</button>
+                        {% endif %}
+                        {% if comment_permissions.get(comment_id) %}
+                        <form action="/delete_event_comment" method="POST" style="margin: 0; display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <input type="hidden" name="event_id" value="{{ event.id }}">
+                            <input type="hidden" name="comment_index" value="{{ comment_id }}">
+                            <button type="submit" onclick="return confirm('Delete this comment?')" style="background: {{ site_settings.secondary_color }}; color: {{ site_settings.text_color }}; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold;">🗑️ Delete</button>
+                        </form>
+                        {% else %}
+                        <span style="font-size: 0.85em; color: #999; font-style: italic;">Only comment owner or event creator can modify</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+        </div>
+        {% else %}
+            <p>Sorry, this event could not be found.</p>
+        {% endif %}
+    </div>
+
+    <script>
+    function toggleCommentEdit(id) {
+        document.getElementById('comment-display-' + id).style.display = 'none';
+        document.getElementById('comment-edit-' + id).style.display = 'block';
+        document.getElementById('edit-btn-' + id).style.display = 'none';
+        document.getElementById('save-btn-' + id).style.display = 'inline-block';
+        document.getElementById('cancel-btn-' + id).style.display = 'inline-block';
+    }
+    
+    function cancelCommentEdit(id) {
+        document.getElementById('comment-display-' + id).style.display = 'block';
+        document.getElementById('comment-edit-' + id).style.display = 'none';
+        document.getElementById('edit-btn-' + id).style.display = 'inline-block';
+        document.getElementById('save-btn-' + id).style.display = 'none';
+        document.getElementById('cancel-btn-' + id).style.display = 'none';
+    }
+    
+    async function saveCommentEdit(id, eventId) {
+        const newText = document.getElementById('comment-text-' + id).value;
+        const formData = new FormData();
+        formData.append('csrf_token', '{{ csrf_token() }}');
+        formData.append('event_id', eventId);
+        formData.append('comment_index', id);
+        formData.append('new_text', newText);
+        
+        try {
+            const response = await fetch('/edit_event_comment', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Failed to update comment');
+            }
+        } catch (error) {
+            console.error('Error updating comment:', error);
+            alert('Failed to update comment');
+        }
+    }
+    </script>
+
+    <script>
+    // Scroll to bottom if #bottom hash is in URL
+    if (window.location.hash === '#bottom') {
+        window.addEventListener('load', function() {
+            window.scrollTo(0, document.body.scrollHeight);
+        });
+    }
+    </script>
+
+    <script>
+    (function() {
+        var accumulatedFiles = [];
+        var dropZone = document.getElementById('dropZone');
+        var fileInput = document.getElementById('media');
+        var previews = document.getElementById('filePreviews');
+        var form = document.querySelector('.form-wrapper form');
+
+        if (!dropZone) return;
+
+        dropZone.addEventListener('click', function() { fileInput.click(); });
+
+        fileInput.addEventListener('change', function() {
+            addFiles(this.files);
+            this.value = '';
+        });
+
+        dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('dragover'); });
+        dropZone.addEventListener('drop', function(e) { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('dragover'); addFiles(e.dataTransfer.files); });
+
+        if (form) {
+            form.addEventListener('dragover', function(e) { e.preventDefault(); });
+            form.addEventListener('drop', function(e) { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files); });
+        }
+
+        function addFiles(files) {
+            for (var i = 0; i < files.length; i++) {
+                var f = files[i];
+                if (f.type.startsWith('image/') || f.type.startsWith('video/')) { accumulatedFiles.push(f); }
+            }
+            renderPreviews();
+        }
+
+        function renderPreviews() {
+            previews.innerHTML = '';
+            accumulatedFiles.forEach(function(f, idx) {
+                var div = document.createElement('div');
+                div.className = 'file-preview';
+                var media;
+                if (f.type.startsWith('image/')) { media = document.createElement('img'); media.src = URL.createObjectURL(f); }
+                else { media = document.createElement('video'); media.src = URL.createObjectURL(f); media.muted = true; }
+                div.appendChild(media);
+                var btn = document.createElement('button');
+                btn.type = 'button'; btn.className = 'remove-file'; btn.textContent = '\u2715';
+                btn.addEventListener('click', function() { accumulatedFiles.splice(idx, 1); renderPreviews(); });
+                div.appendChild(btn);
+                previews.appendChild(div);
+            });
+        }
+
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (accumulatedFiles.length === 0) return;
+                e.preventDefault();
+                var dt = new DataTransfer();
+                accumulatedFiles.forEach(function(f) { dt.items.add(f); });
+                fileInput.files = dt.files;
+                form.submit();
+            });
+        }
+    })();
+    </script>
+    </div> <!-- end .main-content -->
+</body>
+</html>

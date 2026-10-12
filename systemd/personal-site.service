@@ -1,0 +1,49 @@
+# personal-site.service - drop-in systemd unit for the personal site (host install).
+#
+# Install (Ubuntu/Debian, user "youruser", app in /home/youruser/personal-site):
+#   1. Generate a cert (for HTTPS):
+#        cd /home/youruser/personal-site
+#        ./scripts/gen-self-signed-cert.sh certs personal-site.local,192.168.1.10
+#   2. Copy this unit:
+#        sudo cp systemd/personal-site.service /etc/systemd/system/personal-site.service
+#      (edit the Environment lines if your path/cert location differs)
+#   3. sudo systemctl daemon-reload
+#      sudo systemctl enable --now personal-site.service
+#   4. systemctl status personal-site.service
+#
+# For HTTP-only, remove the --certfile/--keyfile flags and bind a plain port:
+#      --bind 0.0.0.0:5050
+# (TLS is turned on by the presence of --certfile/--keyfile; the bind address
+#  stays a plain host:port — gunicorn 23 does not parse an https:// scheme.)
+
+[Unit]
+Description=Personal Site (Flask, gunicorn, HTTPS)
+After=network.target
+
+[Service]
+Type=simple
+User=youruser
+WorkingDirectory=/home/youruser/personal-site
+Environment=FLASK_ENV=production
+Environment=DATA_DIR=/home/youruser/personal-site
+Environment=PORT=8443
+
+ExecStart=/home/youruser/personal-site/venv/bin/gunicorn \
+    --workers 2 --threads 4 --timeout 120 \
+    --bind 0.0.0.0:8443 \
+    --certfile /home/youruser/personal-site/certs/cert.pem \
+    --keyfile /home/youruser/personal-site/certs/key.pem \
+    --access-logfile - \
+    app:app
+
+Restart=on-failure
+RestartSec=3
+# Hardening (drop if your layout needs otherwise)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ReadWritePaths=/home/youruser/personal-site
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

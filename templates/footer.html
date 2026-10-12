@@ -1,0 +1,5 @@
+{% if site_settings.get('footer_text') %}
+<footer style="text-align: center; padding: 40px 20px 20px; margin-top: 60px; border-top: 2px solid {{ site_settings.primary_color }};">
+    <p style="color: {{ site_settings.primary_color }}; font-size: 1.2em; margin: 0;">{{ site_settings.get('footer_text', '') }}</p>
+</footer>
+{% endif %}

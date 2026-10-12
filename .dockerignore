@@ -1,0 +1,17 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.gitignore
+*.md
+.env
+data/
+.flask_secret_key
+*.lock
+events.json
+layout.json
+static/uploads/*
+static/event_photos/*
+static/event_videos/*

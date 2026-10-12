@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Login</title>
+  <link rel="preload" href="/static/fonts/handcaps.otf" as="font" type="font/otf" crossorigin="anonymous">
+  <link rel="stylesheet" href="{{ static_url('fonts/fonts.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/base.css') }}">
+  <style>
+    /* Inline font-face for maximum mobile compatibility */
+    @font-face {
+      font-family: 'Handcaps';
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url('/static/fonts/handcaps.otf') format('opentype');
+    }
+    
+    /* Prevent mobile font scaling issues */
+    html {
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    
+    /* Body font for ALL text elements */
+    *, *::before, *::after {
+      font-family: {{ site_settings.get('body_font', 'handcaps') | get_font_family | safe }} !important;
+    }
+    
+    /* Button font for all clickable elements */
+    a, a *, button, button *, input[type="submit"] {
+      font-family: {{ site_settings.get('button_font', 'comic-sans') | get_font_family | safe }} !important;
+    }
+    
+    body {
+      background-color: {{ site_settings.background_color }};
+      color: {{ site_settings.text_color }};
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      background: {{ site_settings.get('card_color', '#ffffff') }};
+      padding: 40px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: {{ site_settings.primary_color }};
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      text-align: center;
+      color: {{ site_settings.text_color }};
+      opacity: 0.7;
+      margin-bottom: 30px;
+    }
+    .form-group { margin-bottom: 20px; }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid {{ site_settings.secondary_color }};
+      border-radius: 10px;
+      background: {{ site_settings.get('card_color', '#ffffff') }};
+      color: {{ site_settings.text_color }};
+      font-size: 16px;
+    }
+    input:focus {
+      outline: none;
+      border-color: {{ site_settings.primary_color }};
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: {{ site_settings.primary_color }};
+      color: {{ site_settings.text_color }};
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover { background: {{ site_settings.secondary_color }}; }
+    .footer-links {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .footer-links a {
+      color: {{ site_settings.primary_color }};
+      font-weight: bold;
+    }
+    .alert {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .alert-danger { background: #ffcccc; color: #721c24; }
+    .alert-success { background: {{ site_settings.secondary_color }}; color: {{ site_settings.text_color }}; }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <h1>Welcome Back</h1>
+    <p class="subtitle">Sign in to your account</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <form method="POST" action="{{ url_for('login') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required autofocus autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required autocomplete="current-password">
+      </div>
+      <button type="submit">Sign In</button>
+    </form>
+    {% if site_settings.get('registration_mode', 'closed') in ('open', 'invite') %}
+    <div class="footer-links">
+      Don't have an account? <a href="{{ url_for('register') }}">Register here</a>
+    </div>
+    {% endif %}
+  </div>
+</body>
+</html>

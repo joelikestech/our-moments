@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" id="viewport-meta">
+  <script>
+    (function() {
+      var isMobile = (('ontouchstart' in window) || navigator.maxTouchPoints > 0) &&
+                     (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+      if (isMobile) {
+        document.documentElement.classList.add('is-mobile');
+      }
+    })();
+  </script>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>{{ site_settings.get('site_title', 'My Personal Site') }}</title>
+  
+  <!-- Preload fonts for performance -->
+  <link rel="preload" href="/static/fonts/handcaps.otf" as="font" type="font/otf" crossorigin="anonymous">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="{{ static_url('fonts/fonts.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/base.css') }}">
+  
+  <style>
+    /* Inline font-face for maximum mobile compatibility */
+    @font-face {
+      font-family: 'Handcaps';
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url('/static/fonts/handcaps.otf') format('opentype');
+    }
+    
+    /* ===========================================
+       FONT DEFINITIONS - Applied site-wide
+       Mobile-compatible with maximum specificity
+       =========================================== */
+    
+    /* Prevent mobile font scaling issues */
+    html {
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    
+    /* Body font for ALL text elements */
+    *, *::before, *::after {
+      font-family: {{ site_settings.get('body_font', 'handcaps') | get_font_family | safe }} !important;
+    }
+    
+    /* Button font for all clickable elements - must come after * selector */
+    a, a *, 
+    button, button *, 
+    input[type="submit"], 
+    input[type="button"], 
+    select, select *,
+    .nav-btn, .nav-btn *,
+    .btn, .btn *,
+    .user-dropdown, .user-dropdown *,
+    .dropdown-menu a, .dropdown-menu a *,
+    .clickable, .clickable *,
+    [role="button"], [role="button"] * {
+      font-family: {{ site_settings.get('button_font', 'comic-sans') | get_font_family | safe }} !important;
+    }
+    
+    /* ===========================================
+       PAGE STYLES
+       =========================================== */
+    
+    body {
+      background-color: {{ site_settings.background_color }};
+      color: {{ site_settings.text_color }};
+      font-size: 1.2em;
+      padding: 20px;
+      padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+      min-height: 100vh;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .main-content {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Clear fixed header on tablet/mobile */
+    @media (max-width: 1499px) {
+      .main-content {
+        margin-top: 55px;
+      }
+    }
+
+    @media (max-width: 359px) {
+      .main-content {
+        margin-top: 110px;
+      }
+    }
+    
+    h1 {
+      text-align: center;
+      color: {{ site_settings.primary_color }};
+      margin-bottom: 20px;
+    }
+    
+    /* Header Navigation */
+    .nav-btn {
+      background-color: {{ site_settings.primary_color }};
+      color: {{ site_settings.text_color }};
+    }
+    
+    .nav-btn:hover {
+      background-color: {{ site_settings.secondary_color }};
+    }
+    
+    .user-dropdown {
+      background-color: {{ site_settings.primary_color }};
+      color: {{ site_settings.text_color }};
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Only apply hover on devices with hover capability (not touch) */
+    @media (hover: hover) and (pointer: fine) {
+      .user-dropdown:hover {
+        background-color: {{ site_settings.secondary_color }};
+      }
+    }
+    
+    .user-dropdown.active {
+      background-color: {{ site_settings.secondary_color }};
+    }
+    
+    /* Dropdown - click to toggle */
+    .dropdown-menu {
+      display: none;
+      background-color: {{ site_settings.get('card_color', '#ffffff') }};
+    }
+    
+    .dropdown-menu.show {
+      display: block;
+    }
+    
+    .dropdown-menu a {
+      color: {{ site_settings.text_color }};
+    }
+    
+    .dropdown-menu a:hover {
+      background-color: {{ site_settings.secondary_color }};
+    }
+    
+    /* Upload Form */
+    .upload-form {
+      max-width: 600px;
+      margin: 0 auto 40px;
+      background: {{ site_settings.get('card_color', '#ffffff') }};
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .upload-form label {
+      color: {{ site_settings.text_color }};
+      margin-bottom: 8px;
+      display: block;
+    }
+    
+    .upload-form textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 2px solid {{ site_settings.secondary_color }};
+      border-radius: 8px;
+      background: {{ site_settings.get('card_color', '#ffffff') }};
+      color: {{ site_settings.text_color }};
+      min-height: 60px;
+      resize: vertical;
+    }
+    
+    /* Drop Zone */
+    .drop-zone {
+      border: 2px dashed {{ site_settings.secondary_color }};
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      margin: 10px 0 15px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .drop-zone:hover, .drop-zone.dragover {
+      background: {{ site_settings.secondary_color }}20;
+      border-color: {{ site_settings.primary_color }};
+    }
+    
+    .drop-zone-text {
+      color: {{ site_settings.text_color }}80;
+      font-size: 14px;
+    }
+    
+    /* File Previews */
+    .file-previews {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 15px;
+      justify-content: center;
+    }
+    
+    .file-preview {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid {{ site_settings.secondary_color }};
+    }
+    
+    .file-preview img, .file-preview video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .file-preview .remove-file {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 20px;
+      height: 20px;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    
+    .upload-form button {
+      width: 100%;
+      padding: 12px;
+      background-color: {{ site_settings.primary_color }};
+      color: {{ site_settings.text_color }};
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .upload-form button:hover {
+      background-color: {{ site_settings.secondary_color }};
+    }
+    
+    /* Welcome Message */
+    .welcome-card {
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto 30px;
+      padding: 20px;
+      background: {{ site_settings.get('card_color', '#ffffff') }};
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .welcome-card h2 {
+      color: {{ site_settings.primary_color }};
+      font-size: 1.5em;
+      margin: 0;
+    }
+    
+    /* Layout Container */
+    #layout-container {
+      max-width: 800px;
+      margin: auto;
+    }
+    
+    .layout-item {
+      background-color: {{ site_settings.get('card_color', '#ffffff') }};
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    
+    .media-thumb {
+      width: 100%;
+      border-radius: 8px;
+      display: block;
+      cursor: pointer;
+    }
+    
+    img.media-thumb {
+      cursor: pointer;
+    }
+    
+    video.media-thumb {
+      cursor: pointer;
+      min-height: 120px;
+    }
+    
+    .note-box {
+      font-size: 1.4em;
+      color: {{ site_settings.primary_color }};
+      white-space: pre-wrap;
+      margin: 0;
+    }
+    
+    /* Caption Section */
+    .caption-section {
+      padding: 8px 4px;
+      font-size: 0.9em;
+    }
+    
+    .caption-display span {
+      color: {{ site_settings.primary_color }};
+      font-style: italic;
+    }
+    
+    .caption-display button {
+      background: none;
+      border: none;
+      color: {{ site_settings.primary_color }};
+      cursor: pointer;
+      font-size: 0.85em;
+      text-decoration: underline;
+      margin-left: 8px;
+    }
+    
+    .caption-edit input {
+      padding: 6px 10px;
+      border: 2px solid {{ site_settings.secondary_color }};
+      border-radius: 6px;
+      background: {{ site_settings.get('card_color', '#ffffff') }};
+      color: {{ site_settings.text_color }};
+    }
+    
+    .caption-edit button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: 4px;
+    }
+    
+    .caption-edit button[type="submit"] {
+      background: {{ site_settings.primary_color }};
+      color: {{ site_settings.text_color }};
+    }
+    
+    .caption-edit button[type="button"] {
+      background: #ccc;
+      color: #333;
+    }
+    
+    /* Controls Bar */
+    .controls-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 4px 0;
+    }
+    
+    .username-tag {
+      font-size: 0.75em;
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: {{ site_settings.secondary_color }};
+      color: {{ site_settings.text_color }};
+      font-weight: 500;
+    }
+    
+    .delete-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: {{ site_settings.primary_color }};
+      transition: color 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+    }
+    
+    .delete-btn:hover {
+      color: #e74c3c;
+      background: rgba(231, 76, 60, 0.1);
+    }
+    
+    .delete-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+    
+    .drag-handle {
+      font-size: 1.4em;
+      cursor: grab;
+      color: {{ site_settings.primary_color }};
+      opacity: 0.7;
+      padding: 10px 12px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      transition: all 0.2s ease;
+      border-radius: 6px;
+    }
+    
+    .drag-handle:hover {
+      opacity: 1;
+      background: {{ site_settings.secondary_color }}40;
+      transform: scale(1.1);
+    }
+    
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+    
+    /* Dragging states - smooth animations */
+    .layout-item {
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease, margin 0.15s ease;
+      position: relative;
+    }
+
+    /* Placeholder where the dragged item was */
+    .layout-item.dragging {
+      opacity: 0.3;
+      transform: scale(0.97);
+      min-height: 60px;
+    }
+
+    /* Ghost clone that follows the cursor */
+    .drag-ghost {
+      position: fixed;
+      z-index: 10000;
+      pointer-events: none;
+      opacity: 0.75;
+      transform: scale(1.05) rotate(1deg);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      filter: brightness(0.95);
+      transition: none;
+    }
+
+    .drag-ghost::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: {{ site_settings.primary_color }};
+      opacity: 0.15;
+      border-radius: 12px;
+      pointer-events: none;
+    }
+    
+    /* Drop indicator - shows where item will be placed */
+    .layout-item.drop-above::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: 5%;
+      right: 5%;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, {{ site_settings.primary_color }}, transparent);
+      border-radius: 2px;
+      animation: drop-line 0.6s ease-in-out infinite;
+    }
+    
+    .layout-item.drop-below::before {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 5%;
+      right: 5%;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, {{ site_settings.primary_color }}, transparent);
+      border-radius: 2px;
+      animation: drop-line 0.6s ease-in-out infinite;
+    }
+    
+    @keyframes drop-line {
+      0%, 100% { opacity: 0.5; transform: scaleX(0.9); }
+      50% { opacity: 1; transform: scaleX(1); }
+    }
+    
+    /* Hide arrows on mobile/touch devices - use swipe instead */
+    @media (max-width: 768px), (hover: none) {
+      .nav-arrow {
+        display: none !important;
+      }
+    }
+    
+    .feed-pagination {
+      display: flex; justify-content: center; align-items: center; gap: 16px; flex-wrap: wrap;
+      margin: 20px auto; padding: 12px; max-width: 800px;
+      background: {{ site_settings.get('card_color', '#ffffff') }}; border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .feed-pagination a {
+      background: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }};
+      padding: 10px 16px; border-radius: 8px; text-decoration: none; font-weight: bold; min-height: 44px; display: inline-flex; align-items: center;
+    }
+    .flash-messages { max-width: 800px; margin: 0 auto 20px; }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      body {
+        padding: 10px;
+        font-size: 1em;
+      }
+      
+      .layout-item {
+        padding: 12px;
+      }
+      
+      .note-box {
+        font-size: 1.1em;
+      }
+    }
+  </style>
+</head>
+<body>
+  {% include 'header.html' %}
+  <div class="main-content">
+  <h1>{{ site_settings.get('site_title', 'My Personal Site') }}</h1>
+  
+  {% include '_flash.html' %}
+
+  {% if site_settings.get('welcome_message') %}
+  <div class="welcome-card">
+    <h2>{{ site_settings.get('welcome_message', '') }}</h2>
+  </div>
+  {% endif %}
+
+  <form class="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+    <label for="media">Select Image or Video</label>
+    <div class="drop-zone" id="dropZone">
+      <span class="drop-zone-text">Drop photos/videos here or click to browse</span>
+      <input type="file" id="media" name="media" accept="image/*,video/*" multiple style="display:none">
+    </div>
+    <div class="file-previews" id="filePreviews"></div>
+
+    <label for="content">Share a text update or add a caption</label>
+    <textarea id="content" name="content" placeholder="{{ site_settings.get('upload_placeholder', 'Write something cute here...') }}"></textarea>
+
+    <button type="submit">Upload</button>
+  </form>
+
+  <div id="layout-container">
+    {% for img in images %}
+      <div class="layout-item" data-filename="{{ img }}">
+        {% if img.endswith('.txt') %}
+          <div class="note-box">{{ image_content[img] }}</div>
+        {% elif img.lower().endswith(('.mp4', '.webm', '.mov', '.m4v', '.avi', '.mkv')) %}
+          {# No autoplay: poster frame only until the card scrolls into view (events.js plays it muted) #}
+          <video class="media-thumb" muted loop playsinline webkit-playsinline controls preload="none" poster="/thumb/md/uploads/{{ img }}" data-full="/video/uploads/{{ img }}" data-type="video">
+            <source src="/video/uploads/{{ img }}" type="{{ 'video/webm' if img.lower().endswith('.webm') else ('video/quicktime' if img.lower().endswith('.mov') else 'video/mp4') }}">
+            Your browser does not support the video tag.
+          </video>
+        {% else %}
+          {# Feed shows a 1280px derivative; the viewer loads the xl derivative and falls back to the original #}
+          <img src="/thumb/md/uploads/{{ img }}" class="media-thumb" alt="uploaded media" loading="lazy" decoding="async" data-full="/photo/uploads/{{ img }}" data-viewer-full="/thumb/xl/uploads/{{ img }}" data-type="image">
+        {% endif %}
+
+        {% if not img.endswith('.txt') and upload_metadata.get(img) %}
+          {% set caption = upload_metadata[img].get('caption', '') %}
+          <div class="caption-section">
+            <div class="caption-display" id="caption-display-{{ loop.index }}">
+              {% if caption %}
+              <span>{{ caption }}</span>
+              {% else %}
+              <span style="color: #999; font-size: 0.85em;">No caption</span>
+              {% endif %}
+              {% if file_permissions[img] %}
+              <button type="button" onclick="showCaptionEdit('{{ loop.index }}')">Edit</button>
+              {% endif %}
+            </div>
+            {% if file_permissions[img] %}
+            <form action="/edit_caption" method="post" class="caption-edit" id="caption-edit-{{ loop.index }}" style="display: none; margin-top: 8px;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <input type="hidden" name="filename" value="{{ img }}">
+              <input type="text" name="caption" value="{{ caption }}" placeholder="Add caption..." style="width: calc(100% - 120px);">
+              <button type="submit">Save</button>
+              <button type="button" onclick="hideCaptionEdit('{{ loop.index }}')">Cancel</button>
+            </form>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <div class="controls-bar">
+          <div>
+            {% if file_permissions[img] %}
+            <form action="/delete" method="post" style="margin:0; display: inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <input type="hidden" name="filename" value="{{ img }}">
+              <button type="submit" class="delete-btn" title="Delete" aria-label="Delete this item" onclick="return confirm('Delete this item?')">
+                <svg viewBox="0 0 24 24"><path d="M3 6h18v2H3V6zm2 3h14v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9zm3 2v8h2v-8H8zm4 0v8h2v-8h-2zM9 4h6v2H9V4z"/></svg>
+              </button>
+            </form>
+            {% endif %}
+          </div>
+          
+          <div>
+            {% if upload_metadata.get(img) and upload_metadata[img].get('username') %}
+            <span class="username-tag">@{{ upload_metadata[img]['username'] }}</span>
+            {% endif %}
+          </div>
+          
+          <div>
+            <span class="drag-handle" title="Drag to reorder">☰</span>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if total_pages > 1 %}
+  <nav class="feed-pagination" aria-label="Feed pages">
+    {% if current_page > 1 %}<a href="/?page={{ current_page - 1 }}">← Newer</a>{% endif %}
+    <span>Page {{ current_page }} of {{ total_pages }} · {{ total_items }} items</span>
+    {% if current_page < total_pages %}<a href="/?page={{ current_page + 1 }}">Older →</a>{% endif %}
+  </nav>
+  <p class="hint" style="text-align:center; opacity:0.7; font-size:0.85em;">Drag to reorder items within this page.</p>
+  {% endif %}
+  </div> <!-- end .main-content -->
+
+  <!-- Fullscreen Viewer (shared with events pages via events.js) -->
+  <div id="fullscreen-viewer" class="fullscreen-viewer">
+    <div class="event-title-overlay" id="event-title-overlay"></div>
+    <div class="viewer-close" id="viewer-close">&times;</div>
+    <div class="nav-arrow left" id="prev-arrow">&#10094;</div>
+    <div class="nav-arrow right" id="next-arrow">&#10095;</div>
+    <div class="media-counter" id="media-counter"></div>
+    <div class="thumb-strip" id="thumb-strip"></div>
+  </div>
+
+  <!-- JavaScript for drag and drop upload -->
+  <script>
+  (function() {
+    var accumulatedFiles = [];
+    var dropZone = document.getElementById('dropZone');
+    var fileInput = document.getElementById('media');
+    var previews = document.getElementById('filePreviews');
+    var form = document.querySelector('.upload-form');
+
+    if (!dropZone) return;
+
+    dropZone.addEventListener('click', function() { fileInput.click(); });
+
+    fileInput.addEventListener('change', function() {
+      addFiles(this.files);
+      this.value = '';
+    });
+
+    dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('dragover'); });
+    dropZone.addEventListener('drop', function(e) { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('dragover'); addFiles(e.dataTransfer.files); });
+
+    if (form) {
+      form.addEventListener('dragover', function(e) { e.preventDefault(); });
+      form.addEventListener('drop', function(e) { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files); });
+    }
+
+    function addFiles(files) {
+      for (var i = 0; i < files.length; i++) {
+        var f = files[i];
+        if (f.type.startsWith('image/') || f.type.startsWith('video/')) { accumulatedFiles.push(f); }
+      }
+      renderPreviews();
+    }
+
+    function renderPreviews() {
+      previews.innerHTML = '';
+      accumulatedFiles.forEach(function(f, idx) {
+        var div = document.createElement('div');
+        div.className = 'file-preview';
+        var media;
+        if (f.type.startsWith('image/')) { media = document.createElement('img'); media.src = URL.createObjectURL(f); }
+        else { media = document.createElement('video'); media.src = URL.createObjectURL(f); media.muted = true; }
+        div.appendChild(media);
+        var btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'remove-file'; btn.textContent = '\u2715';
+        btn.addEventListener('click', function() { accumulatedFiles.splice(idx, 1); renderPreviews(); });
+        div.appendChild(btn);
+        previews.appendChild(div);
+      });
+    }
+
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        var contentField = document.getElementById('content');
+        var contentText = contentField ? contentField.value.trim() : '';
+
+        // If no files but has text, submit normally (let browser handle it)
+        if (accumulatedFiles.length === 0) {
+          if (!contentText) {
+            e.preventDefault(); // Nothing to submit
+            return;
+          }
+          // Has text only - let normal form submission proceed
+          return;
+        }
+
+        // Has files - prevent default and handle with DataTransfer
+        e.preventDefault();
+        var dt = new DataTransfer();
+        accumulatedFiles.forEach(function(f) { dt.items.add(f); });
+        fileInput.files = dt.files;
+        form.submit();
+      });
+    }
+  })();
+  </script>
+
+  <!-- JavaScript for drag and drop -->
+  <script>
+    (function() {
+      var container = document.getElementById('layout-container');
+      if (!container) return;
+
+      var draggedItem = null;
+      var ghost = null;
+      var saveTimer;
+      var isDragging = false;
+      var lastDropTarget = null;
+      var dragOffsetY = 0;
+      var dragOffsetX = 0;
+
+      // Save layout to server
+      function saveLayout() {
+        var layout = {};
+        var items = container.querySelectorAll('.layout-item');
+        items.forEach(function(item, i) {
+          layout[item.dataset.filename] = { order: i + 1 };
+        });
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(function() {
+          fetch('/save_layout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+            body: JSON.stringify(layout)
+          }).then(function() {
+            isDragging = false;
+          });
+        }, 300);
+      }
+
+      // Get the layout-item parent of an element
+      function getLayoutItem(el) {
+        while (el && !el.classList.contains('layout-item')) {
+          el = el.parentElement;
+        }
+        return el;
+      }
+
+      // Clear all drop indicators
+      function clearDropIndicators() {
+        container.querySelectorAll('.layout-item').forEach(function(item) {
+          item.classList.remove('drop-above', 'drop-below');
+        });
+      }
+
+      // Create ghost clone that follows cursor
+      function createGhost(item) {
+        var rect = item.getBoundingClientRect();
+        ghost = item.cloneNode(true);
+        ghost.classList.add('drag-ghost');
+        ghost.classList.remove('dragging');
+        ghost.style.width = rect.width + 'px';
+        ghost.style.height = rect.height + 'px';
+        ghost.style.left = rect.left + 'px';
+        ghost.style.top = rect.top + 'px';
+        document.body.appendChild(ghost);
+      }
+
+      // Remove ghost clone
+      function removeGhost() {
+        if (ghost) {
+          ghost.remove();
+          ghost = null;
+        }
+      }
+
+      // Get cursor position from event
+      function getCursorPos(e) {
+        if (e.touches) {
+          return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
+      }
+
+      // Handle drag start
+      function onDragStart(e) {
+        var handle = e.target.closest('.drag-handle');
+        if (!handle) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        var item = getLayoutItem(handle);
+        if (!item) return;
+
+        draggedItem = item;
+        isDragging = true;
+        lastDropTarget = null;
+
+        // Calculate offset from cursor to item top-left
+        var pos = getCursorPos(e);
+        var rect = item.getBoundingClientRect();
+        dragOffsetX = pos.x - rect.left;
+        dragOffsetY = pos.y - rect.top;
+
+        // Create ghost that follows cursor
+        createGhost(item);
+
+        // Original becomes a faded placeholder
+        requestAnimationFrame(function() {
+          if (draggedItem) {
+            draggedItem.classList.add('dragging');
+          }
+        });
+
+        document.addEventListener('mousemove', onDragMove);
+        document.addEventListener('mouseup', onDragEnd);
+        document.addEventListener('touchmove', onDragMove, { passive: false });
+        document.addEventListener('touchend', onDragEnd);
+      }
+
+      // Handle drag move
+      function onDragMove(e) {
+        if (!draggedItem) return;
+        e.preventDefault();
+
+        var pos = getCursorPos(e);
+        var clientX = pos.x;
+        var clientY = pos.y;
+
+        // Move ghost to follow cursor
+        if (ghost) {
+          ghost.style.left = (clientX - dragOffsetX) + 'px';
+          ghost.style.top = (clientY - dragOffsetY) + 'px';
+        }
+
+        // Auto-scroll when near edges
+        var scrollZone = 80;
+        var scrollSpeed = 10;
+        if (clientY < scrollZone) {
+          window.scrollBy(0, -scrollSpeed);
+        } else if (clientY > window.innerHeight - scrollZone) {
+          window.scrollBy(0, scrollSpeed);
+        }
+
+        // Clear previous indicators
+        clearDropIndicators();
+
+        // Find item to swap with and show indicator
+        var items = Array.from(container.querySelectorAll('.layout-item:not(.dragging)'));
+        var insertBefore = null;
+        var indicatorItem = null;
+        var showAbove = false;
+
+        for (var i = 0; i < items.length; i++) {
+          var item = items[i];
+          var rect = item.getBoundingClientRect();
+          var midpoint = rect.top + rect.height / 2;
+
+          if (clientY < midpoint) {
+            insertBefore = item;
+            indicatorItem = item;
+            showAbove = true;
+            break;
+          }
+        }
+
+        // If we're below all items, insert at end
+        if (!insertBefore && items.length > 0) {
+          indicatorItem = items[items.length - 1];
+          showAbove = false;
+        }
+
+        // Show drop indicator
+        if (indicatorItem) {
+          if (showAbove) {
+            indicatorItem.classList.add('drop-above');
+          } else {
+            indicatorItem.classList.add('drop-below');
+          }
+        }
+
+        // Move the dragged item in DOM (ghost is visual only)
+        if (insertBefore && insertBefore !== draggedItem.nextElementSibling) {
+          container.insertBefore(draggedItem, insertBefore);
+        } else if (!insertBefore && container.lastElementChild !== draggedItem) {
+          container.appendChild(draggedItem);
+        }
+      }
+
+      // Handle drag end
+      function onDragEnd(e) {
+        if (!draggedItem) return;
+
+        // Remove ghost
+        removeGhost();
+
+        // Clear all visual states
+        clearDropIndicators();
+        draggedItem.classList.remove('dragging');
+        draggedItem = null;
+
+        document.removeEventListener('mousemove', onDragMove);
+        document.removeEventListener('mouseup', onDragEnd);
+        document.removeEventListener('touchmove', onDragMove);
+        document.removeEventListener('touchend', onDragEnd);
+
+        saveLayout();
+      }
+      
+      // Attach event listeners
+      container.addEventListener('mousedown', onDragStart);
+      container.addEventListener('touchstart', onDragStart, { passive: false });
+      
+      // Layout sync from server (for multi-user)
+      var layoutSource = new EventSource('/layout_stream');
+      layoutSource.onmessage = function(event) {
+        if (isDragging) return;
+        try {
+          var newLayout = JSON.parse(event.data);
+          var items = Array.from(container.querySelectorAll('.layout-item'));
+          items.sort(function(a, b) {
+            var orderA = newLayout[a.dataset.filename] ? newLayout[a.dataset.filename].order : 999;
+            var orderB = newLayout[b.dataset.filename] ? newLayout[b.dataset.filename].order : 999;
+            return orderA - orderB;
+          });
+          items.forEach(function(item) {
+            container.appendChild(item);
+          });
+        } catch(e) {}
+      };
+    })();
+
+    // Caption editing
+    function showCaptionEdit(id) {
+      document.getElementById('caption-display-' + id).style.display = 'none';
+      document.getElementById('caption-edit-' + id).style.display = 'block';
+    }
+
+    function hideCaptionEdit(id) {
+      document.getElementById('caption-display-' + id).style.display = 'block';
+      document.getElementById('caption-edit-' + id).style.display = 'none';
+    }
+  </script>
+  
+  <script src="{{ static_url('js/events.js') }}"></script>
+
+  {% include 'footer.html' %}
+</body>
+</html>

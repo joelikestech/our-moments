@@ -1,0 +1,68 @@
+<nav class="header-nav">
+    <div class="header-nav-flex">
+        <a href="/" class="nav-btn">{{ site_settings.get('home_label', '🏠 Home') }}</a>
+        <a href="/calendar" class="nav-btn">{{ site_settings.get('calendar_label', '📅 Calendar') }}</a>
+        <a href="/events?scroll=1" class="nav-btn">{{ site_settings.get('events_label', '📖 Events') }}</a>
+        
+        {% if session.username %}
+        <div class="user-dropdown" id="userDropdown" onclick="toggleDropdown(event)">
+            👤 {{ session.username }}
+            <div class="dropdown-menu" id="dropdownMenu">
+                {% if current_user and current_user.is_admin %}
+                <a href="{{ url_for('admin_settings') }}">⚙️ Site Settings</a>
+                <a href="{{ url_for('manage_users') }}">👥 Manage Users</a>
+                {% endif %}
+                <a href="{{ url_for('change_password') }}">🔑 Change Password</a>
+                <form method="POST" action="{{ url_for('logout') }}" style="margin:0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <a href="#" onclick="this.closest('form').submit(); return false;">🚪 Logout</a>
+                </form>
+            </div>
+        </div>
+        <script>
+        function toggleDropdown(e) {
+            e.stopPropagation();
+            var dropdown = document.getElementById('userDropdown');
+            var menu = document.getElementById('dropdownMenu');
+            var isOpen = menu.classList.contains('show');
+            
+            if (isOpen) {
+                menu.classList.remove('show');
+                dropdown.classList.remove('active');
+                dropdown.blur();
+            } else {
+                menu.classList.add('show');
+                dropdown.classList.add('active');
+            }
+        }
+        function closeDropdown() {
+            var menu = document.getElementById('dropdownMenu');
+            var dropdown = document.getElementById('userDropdown');
+            if (menu && dropdown) {
+                menu.classList.remove('show');
+                dropdown.classList.remove('active');
+                dropdown.blur();
+            }
+        }
+        document.addEventListener('click', function(e) {
+            var dropdown = document.getElementById('userDropdown');
+            if (dropdown && !dropdown.contains(e.target)) {
+                closeDropdown();
+            }
+        });
+        document.addEventListener('touchend', function(e) {
+            var dropdown = document.getElementById('userDropdown');
+            if (dropdown && !dropdown.contains(e.target)) {
+                closeDropdown();
+            }
+        });
+        document.querySelectorAll('#dropdownMenu a').forEach(function(link) {
+            link.addEventListener('click', closeDropdown);
+        });
+        </script>
+        {% else %}
+        <a href="/login" class="nav-btn">🔐 Login</a>
+        {% endif %}
+    </div>
+</nav>
+<script src="{{ static_url('js/header-clearance.js') }}"></script>

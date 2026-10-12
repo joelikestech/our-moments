@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Manage Users - Personal Site</title>
+    <link rel="preload" href="/static/fonts/handcaps.otf" as="font" type="font/otf" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ static_url('fonts/fonts.css') }}">
+    <link rel="stylesheet" href="{{ static_url('css/base.css') }}">
+    <style>
+        /* Inline font-face for maximum mobile compatibility */
+        @font-face {
+            font-family: 'Handcaps';
+            font-style: normal;
+            font-weight: 100 900;
+            font-display: swap;
+            src: url('/static/fonts/handcaps.otf') format('opentype');
+        }
+        
+        /* Prevent mobile font scaling issues */
+        html {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        
+        /* Body font for ALL text elements */
+        *, *::before, *::after {
+            font-family: {{ site_settings.get('body_font', 'handcaps') | get_font_family | safe }} !important;
+        }
+        
+        /* Button font for all clickable elements */
+        a, a *, button, button *, input[type="submit"], select, select *,
+        .nav-btn, .nav-btn *, .btn, .btn *, .user-dropdown, .user-dropdown *,
+        .dropdown-menu a, .dropdown-menu a * {
+            font-family: {{ site_settings.get('button_font', 'comic-sans') | get_font_family | safe }} !important;
+        }
+        
+        body {
+            background-color: {{ site_settings.background_color }};
+            color: {{ site_settings.text_color }};
+            font-size: 1.2em;
+            padding: 20px;
+            padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+            min-height: 100vh;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .main-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .nav-btn { background-color: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; }
+        .nav-btn:hover { background-color: {{ site_settings.secondary_color }}; }
+        .user-dropdown { background-color: {{ site_settings.primary_color }}; color: {{ site_settings.text_color }}; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        @media (hover: hover) and (pointer: fine) { .user-dropdown:hover { background-color: {{ site_settings.secondary_color }}; } }
+        .user-dropdown.active { background-color: {{ site_settings.secondary_color }}; }
+        .dropdown-menu { display: none; background-color: {{ site_settings.get('card_color', '#ffffff') }}; }
+        .dropdown-menu.show { display: block; }
+        .dropdown-menu a { color: {{ site_settings.text_color }}; }
+        .dropdown-menu a:hover { background-color: {{ site_settings.secondary_color }}; }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: {{ site_settings.get('card_color', '#ffffff') }};
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: {{ site_settings.primary_color }};
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .alert-success {
+            background: #c2f0e6;
+            color: #333;
+        }
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ccc;
+        }
+        td {
+            color: {{ site_settings.text_color }};
+        }
+        th {
+            background: {{ site_settings.primary_color }};
+            color: {{ site_settings.text_color }};
+            font-weight: bold;
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .badge-owner {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #333;
+        }
+        .badge-admin {
+            background: {{ site_settings.background_color }};
+            color: #333;
+        }
+        .badge-user {
+            background: #e0e0e0;
+            color: #666;
+        }
+        .btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 5px;
+            font-weight: bold;
+        }
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: {{ site_settings.primary_color }};
+            color: {{ site_settings.text_color }};
+        }
+        .btn-primary:hover {
+            background: {{ site_settings.secondary_color }};
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .btn-warning {
+            background: {{ site_settings.secondary_color }};
+            color: {{ site_settings.text_color }};
+        }
+        .btn-warning:hover {
+            background: {{ site_settings.primary_color }};
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                margin: 0 10px;
+                border-radius: 8px;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+                margin-bottom: 20px;
+            }
+            
+            /* Hide table on mobile, show cards instead */
+            table {
+                display: none;
+            }
+            
+            .mobile-cards {
+                display: block;
+            }
+            
+            .user-card {
+                background: {{ site_settings.background_color }};
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 12px;
+            }
+            
+            .user-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            
+            .user-card-name {
+                font-weight: bold;
+                font-size: 1.1em;
+                word-break: break-word;
+            }
+            
+            .user-card-date {
+                font-size: 0.85em;
+                opacity: 0.8;
+                margin-bottom: 10px;
+            }
+            
+            .user-card-actions {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            
+            .user-card-actions .btn {
+                flex: 1;
+                min-width: 100px;
+                text-align: center;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-cards {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include 'header.html' %}
+    <div class="main-content">
+    
+    <div class="container">
+        <h1>👥 Manage Users</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>
+                        {% if user.is_owner %}
+                            <span class="badge badge-owner">👑 Owner</span>
+                        {% elif user.is_admin %}
+                            <span class="badge badge-admin">Admin</span>
+                        {% else %}
+                            <span class="badge badge-user">User</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user.created_at[:10] if user.created_at else 'N/A' }}</td>
+                    <td>
+                        {% if user.is_owner and not current_user.is_owner %}
+                            <span style="opacity: 0.6; font-style: italic;">Protected</span>
+                        {% else %}
+                            <form method="POST" action="{{ url_for('toggle_admin', user_id=user.id) }}" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    {% if user.is_admin %}Remove Admin{% else %}Make Admin{% endif %}
+                                </button>
+                            </form>
+                            {% if user.id != current_user.id %}
+                            <form method="POST" action="{{ url_for('reset_user_password', user_id=user.id) }}" style="display: inline;" onsubmit="return confirm('Reset password for {{ user.username }}? A new password will be generated.');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                <button type="submit" class="btn btn-sm btn-warning">Reset PW</button>
+                            </form>
+                            {% if not user.is_owner %}
+                            <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" style="display: inline;" onsubmit="return confirm('Delete this user?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                            {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Mobile card view -->
+        <div class="mobile-cards">
+            {% for user in users %}
+            <div class="user-card">
+                <div class="user-card-header">
+                    <span class="user-card-name">{{ user.username }}</span>
+                    {% if user.is_owner %}
+                        <span class="badge badge-owner">👑 Owner</span>
+                    {% elif user.is_admin %}
+                        <span class="badge badge-admin">Admin</span>
+                    {% else %}
+                        <span class="badge badge-user">User</span>
+                    {% endif %}
+                </div>
+                <div class="user-card-date">Created: {{ user.created_at[:10] if user.created_at else 'N/A' }}</div>
+                <div class="user-card-actions">
+                    {% if user.is_owner and not current_user.is_owner %}
+                        <span style="opacity: 0.6; font-style: italic;">Protected</span>
+                    {% else %}
+                        <form method="POST" action="{{ url_for('toggle_admin', user_id=user.id) }}" style="margin: 0;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                {% if user.is_admin %}Remove Admin{% else %}Make Admin{% endif %}
+                            </button>
+                        </form>
+                        {% if user.id != current_user.id %}
+                        <form method="POST" action="{{ url_for('reset_user_password', user_id=user.id) }}" style="margin: 0;" onsubmit="return confirm('Reset password for {{ user.username }}? A new password will be generated.');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit" class="btn btn-sm btn-warning">Reset PW</button>
+                        </form>
+                        {% if not user.is_owner %}
+                        <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" style="margin: 0;" onsubmit="return confirm('Delete this user?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                        {% endif %}
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    </div> <!-- end .main-content -->
+  {% include 'footer.html' %}
+</body>
+</html>

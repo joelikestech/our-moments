@@ -1,0 +1,14 @@
+services:
+  flask-app:
+    build: .
+    container_name: personal-site
+    ports:
+      - "5050:5050"
+    volumes:
+      # Single persistent data directory
+      - ./data:/app/data
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
+      - PORT=5050
+      - DATA_DIR=/app/data

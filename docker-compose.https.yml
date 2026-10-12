@@ -1,0 +1,35 @@
+# HTTPS variant — self-signed TLS terminated by gunicorn inside the container.
+#
+# Setup:
+#   1. Generate a cert (from the repo root, anywhere):
+#        ./scripts/gen-self-signed-cert.sh certs personal-site.local,192.168.1.10
+#   2. Start:
+#        docker compose -f docker-compose.https.yml up -d --build
+#   3. Open https://personal-site.local:8443 (accept the self-signed warning once,
+#      or install certs/cert.pem as a trusted root).
+#
+# The cert dir is bind-mounted read-only so the private key stays on the host.
+# NOTE: the healthcheck below uses -k (insecure) because the cert is self-signed.
+services:
+  flask-app:
+    build: .
+    container_name: personal-site
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./data:/app/data
+      - ./certs:/app/certs:ro
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
+      - HTTPS=1
+      - PORT=8443
+      - DATA_DIR=/app/data
+      - SSL_CERT_FILE=/app/certs/cert.pem
+      - SSL_KEY_FILE=/app/certs/key.pem
+    healthcheck:
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+      test: ["CMD", "wget", "--no-check-certificate", "-qO-", "https://127.0.0.1:8443/login", "-o", "/dev/null"]
