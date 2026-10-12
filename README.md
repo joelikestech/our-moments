@@ -325,6 +325,11 @@ Notes:
 | Videos show blank frame with audio | Install ffmpeg/ffprobe, then run `python app.py rebuild-web-videos` to build H.264 derivatives |
 | Videos not playing on iOS | Wait for auto-transcode on first request, or upload H.264 videos |
 
+## Contact / Issues
+
+Found a bug, or want to talk about a feature? Reach out at
+**jo.tech.repo@gmail.com** — or file an issue on this repo.
+
 ## License
 
 Personal project — no formal license. Use it however you like, no warranty of
