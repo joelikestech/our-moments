@@ -13,13 +13,11 @@ support (no CDNs).
 > line-by-line by hand. It works, it's used daily, and a lot of real, human
 > care went into it — but it was *shaped* by a machine.
 >
-> **A human did put a lot of work into this too.** The AI was the engine, not
-> the author. Across many months a person steered every feature, reviewed and
-> re-reviewed the code, audited the security paths, hammered the edge cases
-> (transcoding, uploads, path traversal, zip bombs, session handling), and
-> fixed what the model got wrong. This is not a "prompt → ship" artifact — it
-> is a human project that happens to have been built with AI as a very fast
-> pair.
+> **A human put a lot of effort into this.** The code is AI-written, but a
+> person designed the features, decided how everything should work, and put
+> in a lot of effort testing it — exercising the edge cases (transcoding,
+> uploads, session handling, the admin panel) and fixing what came out wrong.
+> It is a human-designed, human-tested project that was written by AI.
 >
 > **Use at your own risk.** There is no warranty, no SLA, and no formal
 > license. It is a personal project, not a hardened product. Before you point
@@ -337,4 +335,4 @@ any kind, see the [notice above](#read-this-before-you-run-it).
 
 ---
 
-**Version:** 3.1 | **Python:** 3.8+ | **Flask:** 2.0+ | **Built:** vibecoded, human-steered
+**Version:** 3.1 | **Python:** 3.8+ | **Flask:** 2.0+ | **Built:** AI-written, human-designed & human-tested
