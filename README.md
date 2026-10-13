@@ -68,7 +68,9 @@ Please change this password after first login.
 After first login you'll be **forced to change it** (the `admin` account ships
 with `must_change_password: true`). If you miss the log line, the password is
 gone — delete `users.json` (and its `.lock`/`.tmp` files) and start the app
-again; a fresh random one is printed on the next first-login attempt.
+again; a fresh random one is printed on the next first-login attempt. In a
+Docker install that file lives at **`data/users.json`** (the bind-mounted
+`./data` dir), not in the repo root.
 
 ---
 
@@ -338,8 +340,8 @@ cert files. See the header of that unit file for install steps.
 - *Override file (recommended — survives `git pull`):* leave
   `docker-compose.yml` untouched and drop an untracked
   `docker-compose.override.yml` next to it. Compose auto-loads it, and a plain
-  `docker compose up -d` (e.g. after a `git pull`) keeps it. Add
-  `docker-compose.override.yml` to `.gitignore`. A known-working example:
+  `docker compose up -d` (e.g. after a `git pull`) keeps it. The repo's
+  `.gitignore` already excludes it. A known-working example:
 
   ```yaml
   name: our-moments            # pin the project name so ./data + the container
@@ -361,25 +363,39 @@ cert files. See the header of that unit file for install steps.
           - -q
           - -O
           - /dev/null
-          - https://127.0.0.1:5050/login
+          - https://127.0.0.1:5050/login   # port must match your PORT (5050 by default)
   ```
 
-  > **Docker + TLS gotchas (all verified):**
+  > **Docker + TLS gotchas.** *Verified on a real host:* the override config,
+  > the chown fix, and a `200` over HTTPS. *Inferred from the code (not yet
+  > observed):* the root-owned-key failure below.
+  >
   > - **Key permissions.** `gen-self-signed-cert.sh` runs `chmod 600 key.pem`.
-  >   Run as root, the key ends up owned by root, but the image drops to the
-  >   unprivileged `app` user before gunicorn starts — so gunicorn can't open
-  >   the key and the container fails to start (the cert dir is mounted `:ro`,
-  >   so the entrypoint can't fix it either). Workaround after generating:
-  >   `chown $(docker compose exec -T flask-app id -u app) certs/key.pem`.
-  >   (The dev-server and systemd paths are not affected — the same user that
-  >   generates the key runs the app.)
+  >   If you generate the cert as root (e.g. `sudo`), the key ends up owned by
+  >   root, but the image drops to the unprivileged `app` user before gunicorn
+  >   starts — so gunicorn can't open the key and the container fails to start.
+  >   **Fix ownership *before* you enable TLS, while the container is still up
+  >   on plain HTTP** (`docker compose exec` needs a running container, and a
+  >   root-owned key is exactly the case where it isn't):
+  >
+  >   `sudo chown $(docker compose exec -T flask-app id -u app) certs/key.pem`
+  >
+  >   Or, without any running container — read the UID straight from the image:
+  >
+  >   `sudo chown $(docker compose run --rm --no-deps --entrypoint id flask-app -u app) certs/key.pem`
+  >
+  >   (Easiest: generate the cert **without** `sudo`, so the key is already
+  >   owned by the user who owns the host file.) The dev-server and systemd
+  >   paths are not affected — the same user that generates the key runs the
+  >   app.
   > - **Healthcheck.** The Dockerfile `HEALTHCHECK` hardcodes
   >   `http://127.0.0.1:${PORT}/login`. Enabling TLS any way other than the
   >   `docker-compose.https.yml` file leaves it probing plain HTTP against a TLS
   >   port → the container shows `unhealthy`. Override the healthcheck as above
   >   (or make the Dockerfile scheme-aware).
   > - **`COOKIE_SECURE`.** Set it to `true` behind HTTPS — otherwise the session
-  >   cookie isn't marked `Secure` even though the site is TLS-only.
+  >   cookie isn't marked `Secure` even though the site is TLS-only. It's already
+  >   in `docker-compose.https.yml`; add it to your override file too (as above).
 
 Generate the certificate:
 
@@ -394,9 +410,12 @@ e.g. after a ZIP download). This writes `cert.pem` / `key.pem` (RSA-2048, 10
 years, SANs for your hostname + IP). `certs/` is git-ignored so the private key
 never reaches the repo.
 
-**Making browsers stop complaining (optional).** On Windows, *Install
-Certificate* → **Current User** is enough. On phones: iOS — install the profile,
-then enable full trust in *Settings → General → About → Certificate Trust
+**Making browsers stop complaining (optional).** On Windows: *Install
+Certificate* → **Current User** → *Place all certificates in the following
+store* → **Trusted Root Certification Authorities** (do **not** leave the
+wizard on "Automatically select the certificate store" — that puts it in the
+wrong place and the warning stays). On phones: iOS — install the profile, then
+enable full trust in *Settings → General → About → Certificate Trust
 Settings*; Android — *Settings → Security → Install certificate → CA
 certificate*.
 

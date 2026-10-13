@@ -28,3 +28,6 @@ nohup.out
 
 # Self-signed TLS material (never commit private keys)
 /certs/
+
+# Per-host HTTPS/TLS enablement (untracked on purpose — survives `git pull`)
+docker-compose.override.yml

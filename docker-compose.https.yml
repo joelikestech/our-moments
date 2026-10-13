@@ -27,6 +27,7 @@ services:
       - DATA_DIR=/app/data
       - SSL_CERT_FILE=/app/certs/cert.pem
       - SSL_KEY_FILE=/app/certs/key.pem
+      - COOKIE_SECURE=true
     healthcheck:
       interval: 30s
       timeout: 5s
