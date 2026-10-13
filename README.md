@@ -34,6 +34,40 @@ support (no CDNs).
 
 ---
 
+## First-run admin password
+
+On the **very first** start — when no `users.json` exists yet — the app creates
+a default `admin` account with a **random temporary password** and prints it
+**once** to the log. That log line is your only copy. Where to find it depends
+on how you're running it:
+
+- **Docker** (`docker compose up`): `docker compose logs` — look for the line
+  that says `First run: created default admin user`.
+- **systemd** (`systemctl`): `journalctl -u personal-site -f`, or
+  `journalctl -u personal-site | grep "Temporary password"`.
+- **Plain `python app.py`**: it's printed straight to the terminal you ran it
+  from — the same window, right after startup.
+
+The line looks like:
+
+```
+First run: created default admin user.
+Username: admin
+Temporary password: <11-char token>
+Please change this password after first login.
+```
+
+After first login you'll be **forced to change it** (the `admin` account ships
+with `must_change_password: true`). If you miss the log line, the password is
+gone — delete `users.json` (and its `.lock`/`.tmp` files) and start the app
+again; a fresh random one is printed on the next first-run.
+
+> ⚠️ There is no fixed, well-known default password (no `admin/admin`, no
+> `password`, no empty string). It is always random, always printed once, and
+> never recoverable after that first log line scrolls away.
+
+---
+
 ## Features
 
 - **Home Page** — Paginated photo/video feed with drag-and-drop reorder, editable captions, and a configurable welcome message
