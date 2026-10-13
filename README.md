@@ -36,17 +36,25 @@ support (no CDNs).
 
 ## First-run admin password
 
-On the **very first** start — when no `users.json` exists yet — the app creates
-a default `admin` account with a **random temporary password** and prints it
-**once** to the log. That log line is your only copy. Where to find it depends
-on how you're running it:
+There is no fixed default password (no `admin/admin`, no `password`, no empty
+string). The first time the app needs to look up users — in practice, your
+**first login attempt** — and no `users.json` exists yet, it creates a default
+`admin` account with a **random temporary password** and prints it **once** to
+the log. That log line is your only copy.
 
-- **Docker** (`docker compose up`): `docker compose logs` — look for the line
-  that says `First run: created default admin user`.
+> Note the timing: the account (and its log line) are created **lazily on the
+> first login attempt**, not when the server starts. Loading the login page
+> (`GET /login`) and the Docker healthcheck do **not** create it. So expect the
+> log line *after you first try to log in*, not right after startup.
+
+Where to find that log line depends on how you're running it:
+
+- **Docker** (`docker compose up`): `docker compose logs` — or
+  `docker compose logs | grep -A1 "Username: admin"`.
 - **systemd** (`systemctl`): `journalctl -u personal-site -f`, or
   `journalctl -u personal-site | grep "Temporary password"`.
-- **Plain `python app.py`**: it's printed straight to the terminal you ran it
-  from — the same window, right after startup.
+- **Plain `python app.py`**: it's printed to the same terminal you ran it from,
+  right after your first login attempt.
 
 The line looks like:
 
@@ -60,11 +68,7 @@ Please change this password after first login.
 After first login you'll be **forced to change it** (the `admin` account ships
 with `must_change_password: true`). If you miss the log line, the password is
 gone — delete `users.json` (and its `.lock`/`.tmp` files) and start the app
-again; a fresh random one is printed on the next first-run.
-
-> ⚠️ There is no fixed, well-known default password (no `admin/admin`, no
-> `password`, no empty string). It is always random, always printed once, and
-> never recoverable after that first log line scrolls away.
+again; a fresh random one is printed on the next first-login attempt.
 
 ---
 
@@ -104,7 +108,8 @@ pip install -r requirements.txt
 python app.py
 ```
 
-The site starts at `http://localhost:5000`.
+The site starts at `http://localhost:5000` (dev server; Docker defaults to
+`5050` — see **Default Access**).
 
 ### Docker
 
@@ -114,13 +119,16 @@ docker compose up -d
 
 ## Default Access
 
-- **Home:** `http://localhost:5000`
-- **Login:** `http://localhost:5000/login`
-- **Admin Panel:** `http://localhost:5000/admin/settings`
+URLs below use `localhost`; substitute your host/IP when remote. Two default
+ports: **5000** for `python app.py`, **5050** in Docker.
 
-First run creates a default admin user (`admin`) with a random temporary
-password, printed once to the console/log (`docker compose logs` for Docker).
-You must change it on first login.
+- **Home:** `http://localhost:5000` (Docker: `http://localhost:5050`)
+- **Login:** `http://localhost:5000/login` (Docker: `http://localhost:5050/login`)
+- **Admin Panel:** `http://localhost:5000/admin/settings` (Docker: `…:5050/admin/settings`)
+
+First run creates a default `admin` user — the temporary password is printed
+once to the log, on your first login attempt (see **First-run admin
+password** above). **Change it immediately.**
 
 ## Project Structure
 
@@ -309,38 +317,96 @@ WantedBy=multi-user.target
 
 ### HTTPS (self-signed certificate)
 
-Serve over TLS without a public CA — great for a home LAN. Three supported
-paths:
+Serve over TLS without a public CA — great for a home LAN. TLS is driven by
+`HTTPS=1` plus the cert paths (`SSL_CERT_FILE` / `SSL_KEY_FILE`); the **port is
+independent** — in Docker it's whatever `PORT` is (5050 by default), in the dev
+server and the systemd unit it's 8443. Three supported paths:
 
-**1. Dev server (simplest):** just generate a cert next to the app and run
-`python app.py`. It auto-detects `certs/cert.pem` + `certs/key.pem` (or
-`SSL_CERT_FILE`/`SSL_KEY_FILE` env vars) and switches to HTTPS on port 8443
-automatically. No cert → plain HTTP, exactly as before.
+**1. Dev server (simplest):** generate a cert next to the app and run
+`python app.py`. It auto-detects `certs/cert.pem` + `certs/key.pem` (or the
+`SSL_CERT_FILE`/`SSL_KEY_FILE` env vars) and switches to HTTPS on port 8443.
+No cert → plain HTTP, exactly as before.
 
 **2. Gunicorn + systemd (host install):** use the ready-made unit in
 `systemd/personal-site.service`, which binds `https://0.0.0.0:8443` with the
-cert files. See the header of that file for install steps.
+cert files. See the header of that unit file for install steps.
 
-**3. Docker:** `docker compose -f docker-compose.https.yml up -d --build`
-with `./certs` mounted read-only (see `docker-compose.https.yml` for the
-exact env).
+**3. Docker:** generate the cert, then enable TLS. Two ways:
+
+- *Compose file:* `docker compose -f docker-compose.https.yml up -d --build`
+  with `./certs` mounted read-only.
+- *Override file (recommended — survives `git pull`):* leave
+  `docker-compose.yml` untouched and drop an untracked
+  `docker-compose.override.yml` next to it. Compose auto-loads it, and a plain
+  `docker compose up -d` (e.g. after a `git pull`) keeps it. Add
+  `docker-compose.override.yml` to `.gitignore`. A known-working example:
+
+  ```yaml
+  name: our-moments            # pin the project name so ./data + the container
+  services:                    # resolve the same way in any directory
+    flask-app:
+      container_name: our-moments
+      volumes:
+        - ./certs:/app/certs:ro
+      environment:
+        - HTTPS=1
+        - SSL_CERT_FILE=/app/certs/cert.pem
+        - SSL_KEY_FILE=/app/certs/key.pem
+        - COOKIE_SECURE=true   # mark the session cookie Secure (enables HSTS)
+      healthcheck:             # the Dockerfile's is hardcoded to http:// — override
+        test:                  # it for TLS or the container reports "unhealthy"
+          - CMD
+          - wget
+          - --no-check-certificate
+          - -q
+          - -O
+          - /dev/null
+          - https://127.0.0.1:5050/login
+  ```
+
+  > **Docker + TLS gotchas (all verified):**
+  > - **Key permissions.** `gen-self-signed-cert.sh` runs `chmod 600 key.pem`.
+  >   Run as root, the key ends up owned by root, but the image drops to the
+  >   unprivileged `app` user before gunicorn starts — so gunicorn can't open
+  >   the key and the container fails to start (the cert dir is mounted `:ro`,
+  >   so the entrypoint can't fix it either). Workaround after generating:
+  >   `chown $(docker compose exec -T flask-app id -u app) certs/key.pem`.
+  >   (The dev-server and systemd paths are not affected — the same user that
+  >   generates the key runs the app.)
+  > - **Healthcheck.** The Dockerfile `HEALTHCHECK` hardcodes
+  >   `http://127.0.0.1:${PORT}/login`. Enabling TLS any way other than the
+  >   `docker-compose.https.yml` file leaves it probing plain HTTP against a TLS
+  >   port → the container shows `unhealthy`. Override the healthcheck as above
+  >   (or make the Dockerfile scheme-aware).
+  > - **`COOKIE_SECURE`.** Set it to `true` behind HTTPS — otherwise the session
+  >   cookie isn't marked `Secure` even though the site is TLS-only.
 
 Generate the certificate:
 
 ```bash
-./scripts/gen-self-signed-cert.sh [cert-dir] [san-list] [days]
+sh scripts/gen-self-signed-cert.sh [cert-dir] [san-list] [days]
 # default:  certs  personal-site.local,127.0.0.1  3650 days
-# typical:  ./scripts/gen-self-signed-cert.sh certs personal-site.local,192.168.1.10
+# typical:  sh scripts/gen-self-signed-cert.sh certs personal-site.local,192.168.1.10
 ```
 
-This writes `cert.pem` / `key.pem` (RSA-2048, 10 years, SANs for your
-hostname + IP). `certs/` is git-ignored so the private key never reaches the
-repo.
+(use `sh` rather than `./` so it still works if the executable bit was lost,
+e.g. after a ZIP download). This writes `cert.pem` / `key.pem` (RSA-2048, 10
+years, SANs for your hostname + IP). `certs/` is git-ignored so the private key
+never reaches the repo.
 
-**Making browsers stop complaining (optional):** open `certs/cert.pem` in the
-browser → *Install Certificate* → Current User → put it in *Trusted Root
-Certification Authorities*. After that the site loads with a green lock and
-no warning.
+**Making browsers stop complaining (optional).** On Windows, *Install
+Certificate* → **Current User** is enough. On phones: iOS — install the profile,
+then enable full trust in *Settings → General → About → Certificate Trust
+Settings*; Android — *Settings → Security → Install certificate → CA
+certificate*.
+
+> ⚠️ **HSTS + a self-signed cert.** With `COOKIE_SECURE=true` the app also sends
+> `Strict-Transport-Security: max-age=31536000; includeSubDomains`. If a browser
+> first reaches the site by **hostname** with an untrusted self-signed cert, it
+> remembers HSTS for a year and will then *block* the certificate warning from
+> being clicked through. Browsing by **IP** is unaffected (HSTS ignores IP
+> hosts). Either install `certs/cert.pem` as a trusted root on each device, or
+> browse by IP.
 
 Notes:
 - Self-signed = your own machine is the CA. Fine for a trusted home network; not for public sites.
