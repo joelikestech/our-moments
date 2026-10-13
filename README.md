@@ -1,4 +1,4 @@
-# Personal Site
+# Our Moments
 
 A feature-rich, self-hostable personal website built with Flask — think of it as a
 family photo + events hub. Paginated photo/video feed, an events manager with
