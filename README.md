@@ -371,23 +371,26 @@ cert files. See the header of that unit file for install steps.
   > observed):* the root-owned-key failure below.
   >
   > - **Key permissions.** `gen-self-signed-cert.sh` runs `chmod 600 key.pem`.
-  >   If you generate the cert as root (e.g. `sudo`), the key ends up owned by
-  >   root, but the image drops to the unprivileged `app` user before gunicorn
-  >   starts — so gunicorn can't open the key and the container fails to start.
+  >   The key ends up owned by whoever ran the script (root, or your host user
+  >   — usually UID 1000), but the image drops to the unprivileged `app` user
+  >   (a different UID, e.g. 100) before gunicorn starts — so gunicorn can't
+  >   open the key and the container fails to start. Generating the cert
+  >   without `sudo` does **not** avoid this: the key must be owned by the
+  >   container's `app` UID, whoever generated it.
   >   **Fix ownership *before* you enable TLS, while the container is still up
-  >   on plain HTTP** (`docker compose exec` needs a running container, and a
-  >   root-owned key is exactly the case where it isn't):
+  >   on plain HTTP** (`docker compose exec` needs a running container, and an
+  >   unreadable key is exactly the case where it isn't):
   >
   >   `sudo chown $(docker compose exec -T flask-app id -u app) certs/key.pem`
   >
   >   Or, without any running container — read the UID straight from the image:
   >
-  >   `sudo chown $(docker compose run --rm --no-deps --entrypoint id flask-app -u app) certs/key.pem`
+  >   `sudo chown $(docker compose run --rm -T --no-deps --entrypoint id flask-app -u app) certs/key.pem`
   >
-  >   (Easiest: generate the cert **without** `sudo`, so the key is already
-  >   owned by the user who owns the host file.) The dev-server and systemd
-  >   paths are not affected — the same user that generates the key runs the
-  >   app.
+  >   (`-T` matters in both: without it Compose attaches a terminal, the UID
+  >   comes back with a trailing carriage return, and `chown` rejects it as an
+  >   invalid user.) The dev-server and systemd paths are not affected — the
+  >   same user that generates the key runs the app.
   > - **Healthcheck.** The Dockerfile `HEALTHCHECK` hardcodes
   >   `http://127.0.0.1:${PORT}/login`. Enabling TLS any way other than the
   >   `docker-compose.https.yml` file leaves it probing plain HTTP against a TLS
